@@ -2,6 +2,7 @@ services:
   postgres:
     image: pgduckdb/pgduckdb:16-main
     restart: unless-stopped
+    shm_size: 256mb
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-oe}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
