@@ -32,6 +32,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -58,11 +59,33 @@ class Development(Base):
     )
     code: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Type of development (residential, mixed_use, commercial, ...). Free-form
+    # string at the model layer; the schema layer enforces an enum so future
+    # additions (e.g. ``industrial_park``) don't require a DB migration.
+    dev_type: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="residential", server_default="residential"
+    )
     location_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # ISO-3166 alpha-2 country code (DE, US, UK, ...). Drives the
+    # house-type catalogue picker and the tax engine.
+    country_code: Mapped[str | None] = mapped_column(String(2), nullable=True, index=True)
+    # Geo coordinates (WGS84). Stored as Numeric so we don't lose precision
+    # round-tripping through SQLite. Optional — only populated when the
+    # operator pins the development on the map.
+    latitude: Mapped[Decimal | None] = mapped_column(Numeric(10, 7), nullable=True)
+    longitude: Mapped[Decimal | None] = mapped_column(Numeric(10, 7), nullable=True)
     total_plots: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_area_m2: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=Decimal("0"), server_default="0"
+    )
+    total_floors: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     sales_phase: Mapped[str] = mapped_column(
         String(40), nullable=False, default="planning", index=True
     )
+    start_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
     launch_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
     completion_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
     marketing_brief: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -70,6 +93,28 @@ class Development(Base):
         String(40), nullable=False, default="active", index=True
     )
     units: Mapped[str] = mapped_column(String(16), nullable=False, default="metric")
+    # Total sales target in ``currency``. Used by the dashboard's progress bar
+    # and by the EAC / cashflow forecasts.
+    sales_target_amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=Decimal("0"), server_default="0"
+    )
+    # ISO-4217 currency. Empty-string default == "fall back to the parent
+    # project's currency at read time"; the service layer never auto-fills
+    # this with a hard-coded "EUR" (see v3 DB-level EUR-default kill).
+    currency: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="", server_default=""
+    )
+    # People / orgs. Kept as free-form strings instead of FK to Companies
+    # because (a) Companies module is optional and (b) the developer can
+    # often be a JV that doesn't have a tidy row in any directory.
+    developer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    architect_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    general_contractor_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Marketing assets — URLs only. File uploads belong to the Documents
+    # module; this column just stores the canonical link.
+    cover_image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    brochure_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    website_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     metadata_: Mapped[dict] = mapped_column(  # type: ignore[assignment]
         "metadata", JSON, nullable=False, default=dict, server_default="{}"
     )
@@ -200,11 +245,42 @@ class Plot(Base):
         String(40), nullable=True
     )
     orientation: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # Free-text label kept until a future task replaces this with a
+    # user-creatable HouseType catalogue (tracked separately).
+    house_type_label: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Compass / cardinal view subject — sea, mountain, garden, courtyard,
+    # street, park, other. Kept as String (not enum) so a developer can
+    # add bespoke values per project without a migration.
+    view_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     area_m2: Mapped[Decimal] = mapped_column(
         Numeric(18, 2), nullable=False, default=Decimal("0")
     )
     garden_area_m2: Mapped[Decimal | None] = mapped_column(
         Numeric(18, 2), nullable=True
+    )
+    balcony_area_m2: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 2), nullable=True
+    )
+    storage_area_m2: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 2), nullable=True
+    )
+    # Per-plot bedroom / bathroom override. Defaults to 0 so the form
+    # column is always present. The HouseType row carries the "default"
+    # for a model — these per-plot fields capture deviations
+    # (e.g. converted study -> bedroom).
+    bedrooms: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    bathrooms: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    parking_spaces: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    # Best-effort average daily sun exposure. Optional — most listings
+    # don't have this measured, but high-end / passive-house brochures do.
+    sun_exposure_hours: Mapped[Decimal | None] = mapped_column(
+        Numeric(4, 2), nullable=True
     )
     # ``price_base`` = explicit override (priority 1).
     # ``computed_price`` = cached value from PriceMatrix.compute(plot) (prio 2).
@@ -333,6 +409,18 @@ class Buyer(Base):
     )
     # Plain UUID — refers to oe_portal_user.id but NOT a FK (cross-module).
     portal_user_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), nullable=True)
+    # ── Contacts bridge ────────────────────────────────────────────
+    # Optional FK back to the canonical contact row in
+    # ``oe_contacts_contact``. The Contact owns name/email/phone as the
+    # single source of truth; the Buyer keeps only buyer-specific
+    # fields (status, contract_value, deposit_*, …). Nullable for
+    # legacy rows + portal-side anonymous buyers.
+    contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("oe_contacts_contact.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     full_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     email: Mapped[str] = mapped_column(String(255), nullable=False, default="", index=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -580,7 +668,19 @@ class Snag(Base):
 
 
 class WarrantyClaim(Base):
-    """A post-handover warranty claim."""
+    """A post-handover warranty claim.
+
+    Extended in v3113 with deep-integration columns so the UI can:
+      * file the claim against a specific handover (warranty period
+        is computed from ``Handover.completed_at`` + the configured
+        warranty years — see ``WarrantyClaimResponse.is_in_warranty``).
+      * assign the claim to a contractor / PM (``assigned_to_user_id``).
+      * attach magic-byte-validated photos (``photos`` JSON list of
+        relative storage paths, mirrors ``Snag.photos``).
+      * track an SLA deadline (``sla_deadline``) and resolution notes.
+      * bridge an upstream Snag (``source_snag_id``) so a single defect
+        flows snag → punchlist + warranty cleanly.
+    """
 
     __tablename__ = "oe_property_dev_warranty_claim"
 
@@ -596,16 +696,57 @@ class WarrantyClaim(Base):
         nullable=False,
         index=True,
     )
+    # Optional cross-link: which handover (and thus which warranty
+    # window) the claim is filed against. SET NULL on handover delete
+    # so the claim survives if a defective handover is rolled back.
+    handover_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("oe_property_dev_handover.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Optional upstream Snag this claim was raised from (so we don't
+    # duplicate the same defect across snag + warranty). SET NULL on
+    # snag delete.
+    source_snag_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("oe_property_dev_snag.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Optional assignee — contractor / PM responsible for resolution.
+    # No FK on oe_users_user (cross-module ref kept loose; matches the
+    # rest of property_dev's external-ref convention).
+    assigned_to_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), nullable=True, index=True
+    )
     raised_at: Mapped[str | None] = mapped_column(String(20), nullable=True)
     category: Mapped[str] = mapped_column(
         String(40), nullable=False, default="defect", index=True
     )
+    # NOTE: severity mirrors Snag.severity (minor/major/critical) — used
+    # for SLA escalation in the UI.
+    severity: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="minor",
+        server_default="minor",
+        index=True,
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    # JSON list of relative storage paths (uploaded via magic-byte gated
+    # /api/v1/property-dev/warranty-claims/{id}/photos/). Mirrors
+    # ``Snag.photos`` shape so the UI gallery component can be shared.
+    photos: Mapped[list] = mapped_column(  # type: ignore[assignment]
+        JSON, nullable=False, default=list, server_default="[]"
+    )
     status: Mapped[str] = mapped_column(
         String(40), nullable=False, default="raised", index=True
     )
+    sla_deadline: Mapped[str | None] = mapped_column(String(20), nullable=True)
     accepted_at: Mapped[str | None] = mapped_column(String(20), nullable=True)
     closed_at: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    resolution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Cross-module ref to oe_service_ticket.id — plain UUID, NO FK.
     linked_service_ticket_id: Mapped[uuid.UUID | None] = mapped_column(
         GUID(), nullable=True
@@ -648,6 +789,16 @@ class Lead(Base):
     )
     source: Mapped[str] = mapped_column(
         String(40), nullable=False, default="other", index=True
+    )
+    # ── Contacts bridge ────────────────────────────────────────────
+    # Optional FK back to the canonical contact row. The Contact owns
+    # name/email/phone; the Lead keeps lead-specific fields (score,
+    # source, status, …). Nullable for legacy rows.
+    contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("oe_contacts_contact.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     lead_score: Mapped[Decimal] = mapped_column(
         Numeric(5, 2), nullable=False, default=Decimal("0")
@@ -1438,6 +1589,191 @@ class PriceMatrix(Base):
 
 
 
+# ── House Type Catalogue (user-extensible, country-scoped presets) ──────
+
+
+class PropertyDevHouseType(Base):
+    """A user-creatable / preset house-type entry for the Plot picker.
+
+    Distinct from :class:`HouseType` (which is per-Development and carries
+    full pricing/area/bedroom data). This catalogue is a lightweight
+    classification list used when filling out a Plot — the user picks
+    e.g. "Reihenhaus" or "Townhouse" without committing to a specific
+    floor plan. The chosen entry is stored on the Plot via metadata
+    (``metadata.house_type_catalogue_id``) so the existing
+    ``Plot.house_type_id`` FK to dev-scoped HouseType is unaffected.
+
+    Scoping:
+      - ``project_id IS NULL`` + ``is_preset=True`` → global preset
+        (shipped via migration seed; visible to every tenant).
+      - ``project_id`` set → user-created entry, only visible to that
+        project's owner.
+
+    ``code`` is a short UPPER_SNAKE identifier ("REIHENHAUS",
+    "TOWNHOUSE"); ``name`` is the localised display label. The
+    ``(project_id, country_code, code)`` unique constraint lets two
+    projects keep the same code and lets a project override a preset
+    by creating its own row with the same ``code``.
+    """
+
+    __tablename__ = "oe_property_dev_house_type_catalogue"
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "country_code",
+            "code",
+            name="uq_oe_property_dev_house_type_catalogue_proj_country_code",
+        ),
+        Index(
+            "ix_oe_property_dev_house_type_catalogue_proj_country",
+            "project_id",
+            "country_code",
+        ),
+    )
+
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("oe_projects_project.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    # ISO 3166-1 alpha-2 country code; NULL for region-agnostic entries.
+    # Stored upper-case ("DE", "US"). When the operator picks "Other /
+    # Custom region" in the UI we store NULL here and the free-text tag
+    # lands in :attr:`region_label` below.
+    country_code: Mapped[str | None] = mapped_column(
+        String(2), nullable=True, index=True
+    )
+    # Free-text region label, used either when the operator picks
+    # "Other / Custom region" (e.g. "EU-wide", "DACH", "Middle East") or
+    # as an extra qualifier alongside ``country_code``. Optional.
+    region_label: Mapped[str | None] = mapped_column(
+        String(80), nullable=True
+    )
+    code: Mapped[str] = mapped_column(String(40), nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    area_typical_m2: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 2), nullable=True
+    )
+    floors_typical: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Layout — purely typical/illustrative, the actual Plot row carries
+    # the source-of-truth quantities. Kept nullable so partial info is OK.
+    typical_bedrooms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    typical_bathrooms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # On-plot parking — typical count of parking spots (driveway + garage
+    # + carport, whichever the operator wants to advertise). Nullable so
+    # multi-family schemes that don't advertise per-unit parking can omit
+    # the value. Capped at 10 by the schema validator.
+    parking_spots: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Pricing — both bounds optional so the operator can store a single-
+    # ended hint ("from 250k", "up to 1.2M"). ``currency`` is ISO 4217.
+    typical_price_min: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 2), nullable=True
+    )
+    typical_price_max: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 2), nullable=True
+    )
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    # Free strings so tenants can extend without a schema change. The UI
+    # constrains them to a curated dropdown but the storage stays open.
+    construction_type: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )
+    energy_class: Mapped[str | None] = mapped_column(
+        String(10), nullable=True
+    )
+    sales_channel: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )
+    image_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Free-form tag list. JSON (not JSONB) because SQLite-compat — this
+    # is settings data, never queried by content.
+    tags: Mapped[list] = mapped_column(  # type: ignore[type-arg]
+        JSON, nullable=False, default=list, server_default="[]"
+    )
+    is_preset: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0", index=True
+    )
+    # Owning user — NULL for migration-seeded presets. Plain UUID, NOT a
+    # FK to oe_users_user (cross-module convention; SET NULL on user
+    # delete would need a real FK with on-delete callback, which we
+    # explicitly avoid here to match the rest of property_dev).
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), nullable=True, index=True
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<PropertyDevHouseType {self.code} "
+            f"({self.country_code or '*'}, "
+            f"{'preset' if self.is_preset else 'custom'})>"
+        )
+
+
+class PropertyDevCustomTemplate(Base):
+    """User-uploaded document template (.docx / .html / .pdf).
+
+    Settings page entry alongside the six built-in PDF generators in
+    :mod:`app.modules.property_dev.document_templates`. The actual
+    template file is written to ``uploads/property_dev/custom_templates/``
+    by the upload endpoint; the row carries only metadata.
+
+    Scoping: ``project_id`` is the owning project (and matches every
+    other property_dev row). ``development_id`` is optional — populated
+    when the operator wants a template available only inside a
+    specific development context (the settings page's "set default
+    for current development" toggle persists this client-side).
+
+    ``doc_type`` is intentionally a free string: tenants may want to
+    introduce types beyond the six built-ins ("brokerage_commission",
+    "kyc_checklist", "payment_reminder", "snag_report", "invoice", ...).
+    Validation lives in the upload endpoint (length + allowed
+    characters), not at the database layer.
+    """
+
+    __tablename__ = "oe_property_dev_custom_template"
+
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("oe_projects_project.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    # Optional development scope (no FK — same convention as the rest
+    # of property_dev cross-table refs).
+    development_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    doc_type: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="custom", server_default="custom",
+        index=True,
+    )
+    entity: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="custom", server_default="custom"
+    )
+    trigger: Mapped[str] = mapped_column(
+        String(200), nullable=False, default="manual", server_default="manual"
+    )
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    storage_path: Mapped[str] = mapped_column(String(512), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), nullable=True, index=True
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<PropertyDevCustomTemplate {self.name} "
+            f"({self.doc_type}, {self.filename})>"
+        )
+
+
 __all__ = [
     "Block",
     "Broker",
@@ -1462,6 +1798,8 @@ __all__ = [
     "Phase",
     "Plot",
     "PriceMatrix",
+    "PropertyDevCustomTemplate",
+    "PropertyDevHouseType",
     "Reservation",
     "SalesContract",
     "SalesContractRevision",

@@ -10,6 +10,19 @@ import { apiGet, apiPost, apiPatch, apiDelete } from '@/shared/lib/api';
 
 export type DevelopmentSalesPhase = 'planning' | 'launch' | 'sales' | 'handover' | 'closed';
 export type DevelopmentStatus = 'active' | 'paused' | 'completed';
+export type DevelopmentType =
+  | 'residential'
+  | 'mixed_use'
+  | 'commercial'
+  | 'industrial'
+  | 'hospitality'
+  | 'resort'
+  | 'senior_living'
+  | 'student_housing'
+  | 'retail'
+  | 'office'
+  | 'logistics'
+  | 'other';
 export type PlotStatus =
   | 'planned'
   | 'reserved'
@@ -32,21 +45,44 @@ export type WarrantyStatus =
   | 'accepted'
   | 'rejected'
   | 'closed';
-export type WarrantyCategory = 'defect' | 'snag' | 'service';
+export type WarrantyCategory =
+  | 'defect'
+  | 'snag'
+  | 'service'
+  | 'structural'
+  | 'cosmetic'
+  | 'mep';
+export type WarrantySeverity = 'minor' | 'major' | 'critical';
 
 export interface Development {
   id: string;
   project_id: string;
   code: string;
   name: string;
+  description: string | null;
+  dev_type: DevelopmentType;
   location_address: string | null;
+  country_code: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
   total_plots: number;
+  total_area_m2: number | string;
+  total_floors: number;
   sales_phase: DevelopmentSalesPhase;
+  start_date: string | null;
   launch_date: string | null;
   completion_date: string | null;
   marketing_brief: string | null;
   status: DevelopmentStatus;
   units: 'metric' | 'imperial';
+  sales_target_amount: number | string;
+  currency: string;
+  developer_name: string | null;
+  architect_name: string | null;
+  general_contractor_name: string | null;
+  cover_image_url: string | null;
+  brochure_url: string | null;
+  website_url: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -58,12 +94,20 @@ export interface Plot {
   plot_number: string;
   house_type_id: string | null;
   house_type_variant_id: string | null;
+  house_type_label?: string | null;
   block_id?: string | null;
   level_in_block?: number | null;
   position_on_floor?: string | null;
   orientation: string | null;
+  view_type?: string | null;
   area_m2: number | string;
   garden_area_m2: number | string | null;
+  balcony_area_m2?: number | string | null;
+  storage_area_m2?: number | string | null;
+  bedrooms?: number;
+  bathrooms?: number;
+  parking_spaces?: number;
+  sun_exposure_hours?: number | string | null;
   price_base: number | string;
   computed_price?: number | string | null;
   currency: string;
@@ -112,6 +156,14 @@ export interface Buyer {
   development_id: string;
   plot_id: string | null;
   portal_user_id: string | null;
+  /**
+   * Contacts module bridge (v3117). When set, the canonical person
+   * data (name, email, phone) lives in the Contacts module — the
+   * Buyer keeps only buyer-specific fields. The bridge is best-effort,
+   * so legacy rows (created before v3117) and portal-anonymous buyers
+   * may legitimately have this NULL.
+   */
+  contact_id: string | null;
   full_name: string;
   email: string;
   phone: string | null;
@@ -168,9 +220,23 @@ export interface Handover {
   updated_at: string;
 }
 
+export type SnagCategory =
+  | 'cosmetic'
+  | 'functional'
+  | 'structural'
+  | 'mechanical'
+  | 'electrical'
+  | 'plumbing'
+  | 'finishing'
+  | 'exterior'
+  | 'general'
+  | 'safety';
+
 export interface Snag {
   id: string;
   handover_id: string;
+  buyer_id: string | null;
+  category: SnagCategory;
   location_in_plot: string | null;
   severity: SnagSeverity;
   description: string;
@@ -178,6 +244,9 @@ export interface Snag {
   reported_at: string | null;
   fixed_at: string | null;
   fix_notes: string | null;
+  cost_impact: number | string;
+  photos: string[];
+  linked_punch_item_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -187,14 +256,22 @@ export interface WarrantyClaim {
   id: string;
   plot_id: string;
   buyer_id: string;
+  handover_id: string | null;
+  source_snag_id: string | null;
+  assigned_to_user_id: string | null;
   raised_at: string | null;
   category: WarrantyCategory;
+  severity: WarrantySeverity;
   description: string;
+  photos: string[];
   status: WarrantyStatus;
+  sla_deadline: string | null;
   accepted_at: string | null;
   closed_at: string | null;
+  resolution_notes: string | null;
   linked_service_ticket_id: string | null;
   metadata: Record<string, unknown>;
+  is_in_warranty: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -216,17 +293,52 @@ export interface CreateDevelopmentPayload {
   project_id: string;
   code: string;
   name?: string;
+  description?: string;
+  dev_type?: DevelopmentType;
   location_address?: string;
+  country_code?: string;
+  latitude?: number;
+  longitude?: number;
   total_plots?: number;
+  total_area_m2?: number;
+  total_floors?: number;
   sales_phase?: DevelopmentSalesPhase;
+  start_date?: string;
+  launch_date?: string;
+  completion_date?: string;
+  marketing_brief?: string;
+  status?: DevelopmentStatus;
+  units?: 'metric' | 'imperial';
+  sales_target_amount?: number;
+  currency?: string;
+  developer_name?: string;
+  architect_name?: string;
+  general_contractor_name?: string;
+  cover_image_url?: string;
+  brochure_url?: string;
+  website_url?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface CreatePlotPayload {
   development_id: string;
   plot_number: string;
   house_type_id?: string;
+  house_type_label?: string;
+  block_id?: string;
+  level_in_block?: number;
+  position_on_floor?: string;
+  orientation?: string;
+  view_type?: string;
   area_m2?: number;
-  price_base?: number;
+  garden_area_m2?: number;
+  balcony_area_m2?: number;
+  storage_area_m2?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  parking_spaces?: number;
+  sun_exposure_hours?: number;
+  price_base?: number | string;
   currency?: string;
   status?: PlotStatus;
 }
@@ -349,6 +461,10 @@ export function updatePlot(id: string, data: Partial<CreatePlotPayload>): Promis
   return apiPatch<Plot>(`${BASE}/plots/${id}`, data);
 }
 
+export function deletePlot(id: string): Promise<void> {
+  return apiDelete<void>(`${BASE}/plots/${id}`);
+}
+
 export function reservePlot(
   id: string,
   data: {
@@ -378,6 +494,105 @@ export function listVariants(house_type_id: string): Promise<HouseTypeVariant[]>
   return apiGet<HouseTypeVariant[]>(`${BASE}/house-type-variants/?${qs.toString()}`);
 }
 
+/* ── House Type Catalogue (preset + user-created) ─────────────────────── */
+
+export interface HouseTypeCatalogueEntry {
+  id: string;
+  project_id: string | null;
+  country_code: string | null;
+  region_label: string | null;
+  code: string;
+  name: string;
+  description: string | null;
+  area_typical_m2: string | null;
+  floors_typical: number | null;
+  typical_bedrooms: number | null;
+  typical_bathrooms: number | null;
+  parking_spots: number | null;
+  typical_price_min: string | null;
+  typical_price_max: string | null;
+  currency: string | null;
+  construction_type: string | null;
+  energy_class: string | null;
+  sales_channel: string | null;
+  image_url: string | null;
+  tags: string[];
+  is_preset: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateHouseTypeCataloguePayload {
+  project_id: string;
+  country_code?: string | null;
+  region_label?: string | null;
+  code: string;
+  name: string;
+  description?: string | null;
+  area_typical_m2?: number | string | null;
+  floors_typical?: number | null;
+  typical_bedrooms?: number | null;
+  typical_bathrooms?: number | null;
+  parking_spots?: number | null;
+  typical_price_min?: number | string | null;
+  typical_price_max?: number | string | null;
+  currency?: string | null;
+  construction_type?: string | null;
+  energy_class?: string | null;
+  sales_channel?: string | null;
+  image_url?: string | null;
+  tags?: string[];
+}
+
+export interface UpdateHouseTypeCataloguePayload {
+  name?: string;
+  description?: string | null;
+  area_typical_m2?: number | string | null;
+  floors_typical?: number | null;
+  country_code?: string | null;
+  region_label?: string | null;
+  typical_bedrooms?: number | null;
+  typical_bathrooms?: number | null;
+  parking_spots?: number | null;
+  typical_price_min?: number | string | null;
+  typical_price_max?: number | string | null;
+  currency?: string | null;
+  construction_type?: string | null;
+  energy_class?: string | null;
+  sales_channel?: string | null;
+  image_url?: string | null;
+  tags?: string[];
+}
+
+export function fetchHouseTypes(
+  countryCode?: string,
+  projectId?: string,
+): Promise<HouseTypeCatalogueEntry[]> {
+  const qs = new URLSearchParams();
+  if (countryCode) qs.set('country_code', countryCode);
+  if (projectId) qs.set('project_id', projectId);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return apiGet<HouseTypeCatalogueEntry[]>(`${BASE}/house-type-catalogue/${suffix}`);
+}
+
+export function createHouseTypeCatalogue(
+  data: CreateHouseTypeCataloguePayload,
+): Promise<HouseTypeCatalogueEntry> {
+  return apiPost<HouseTypeCatalogueEntry>(`${BASE}/house-type-catalogue/`, data);
+}
+
+export function updateHouseTypeCatalogue(
+  id: string,
+  data: UpdateHouseTypeCataloguePayload,
+): Promise<HouseTypeCatalogueEntry> {
+  return apiPatch<HouseTypeCatalogueEntry>(`${BASE}/house-type-catalogue/${id}`, data);
+}
+
+export function deleteHouseTypeCatalogue(id: string): Promise<void> {
+  return apiDelete<void>(`${BASE}/house-type-catalogue/${id}`);
+}
+
 /* ── Buyers ───────────────────────────────────────────────────────────── */
 
 export function listBuyers(params: {
@@ -394,14 +609,43 @@ export function listBuyers(params: {
   return apiGet<Buyer[]>(`${BASE}/buyers/?${qs.toString()}`);
 }
 
-export function createBuyer(data: CreateBuyerPayload): Promise<Buyer> {
-  return apiPost<Buyer>(`${BASE}/buyers/`, data);
+/**
+ * Create a Buyer. When ``syncToContacts`` is true (default) the
+ * Contacts module gets a mirror entry tagged ``property_dev_buyer``
+ * (find-or-create by email; see the backend bridge for details). Pass
+ * false for portal-driven anonymous signups.
+ */
+export function createBuyer(
+  data: CreateBuyerPayload,
+  opts: { syncToContacts?: boolean } = {},
+): Promise<Buyer> {
+  const { syncToContacts = true } = opts;
+  const qs = syncToContacts ? '' : '?sync_to_contacts=false';
+  return apiPost<Buyer>(`${BASE}/buyers/${qs}`, data);
+}
+
+/**
+ * Fetch the Contacts directory entry linked to a Buyer (or 404 if not linked).
+ * Used by the Buyer detail drawer to render the "Linked Contact" card.
+ */
+export function getBuyerContact(buyerId: string): Promise<{
+  id: string;
+  contact_type: string;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
+  primary_email: string | null;
+  primary_phone: string | null;
+  country_code: string | null;
+  module_tags: string[];
+}> {
+  return apiGet(`${BASE}/buyers/${buyerId}/contact`);
 }
 
 export function contractBuyer(
   id: string,
   data: {
-    contract_value: number;
+    contract_value: number | string;
     currency: string;
     contract_signed_at: string;
     deposit_paid_at?: string;
@@ -427,6 +671,45 @@ export function updateBuyer(
   return apiPatch<Buyer>(`${BASE}/buyers/${buyerId}`, payload);
 }
 
+/**
+ * Hard-delete a buyer. The backend (DELETE /buyers/{id}) returns 204.
+ * Wired through ``ConfirmDialog`` so the user has to acknowledge first.
+ */
+export function deleteBuyer(buyerId: string): Promise<void> {
+  return apiDelete(`${BASE}/buyers/${buyerId}`);
+}
+
+/**
+ * Payload for ``POST /buyers/{id}/cancel`` — cancels a buyer and computes
+ * jurisdiction-specific deposit forfeiture in a single call. Mirrors the
+ * backend ``BuyerCancelRequest`` Pydantic schema.
+ */
+export interface BuyerCancelPayload {
+  cancelled_at: string;
+  reason?: string;
+  jurisdiction_override?: string;
+}
+
+export interface DepositForfeitureResponse {
+  buyer_id: string;
+  jurisdiction: string;
+  deposit_amount: number | string;
+  forfeited_amount: number | string;
+  refundable_amount: number | string;
+  rule_citation: string;
+  rule_summary: string;
+}
+
+export function cancelBuyer(
+  buyerId: string,
+  payload: BuyerCancelPayload,
+): Promise<DepositForfeitureResponse> {
+  return apiPost<DepositForfeitureResponse>(
+    `${BASE}/buyers/${buyerId}/cancel`,
+    payload,
+  );
+}
+
 export function listJurisdictions(): Promise<string[]> {
   return apiGet<string[]>(`${BASE}/jurisdictions`);
 }
@@ -443,6 +726,43 @@ export function listSelections(buyer_id: string): Promise<BuyerSelection[]> {
 export function listHandovers(plot_id: string): Promise<Handover[]> {
   const qs = new URLSearchParams({ plot_id });
   return apiGet<Handover[]>(`${BASE}/handovers/?${qs.toString()}`);
+}
+
+export interface CreateHandoverPayload {
+  plot_id: string;
+  scheduled_at?: string;
+  notes?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export function createHandover(data: CreateHandoverPayload): Promise<Handover> {
+  return apiPost<Handover>(`${BASE}/handovers/`, data);
+}
+
+export interface UpdateHandoverPayload {
+  scheduled_at?: string | null;
+  completed_at?: string | null;
+  snag_count_at_handover?: number;
+  final_check_passed?: boolean;
+  keys_handed_over_at?: string | null;
+  customer_signature_ref?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export function updateHandover(
+  id: string,
+  data: UpdateHandoverPayload,
+): Promise<Handover> {
+  return apiPatch<Handover>(`${BASE}/handovers/${id}`, data);
+}
+
+export function deleteHandover(id: string): Promise<void> {
+  return apiDelete(`${BASE}/handovers/${id}`);
+}
+
+export function getHandover(id: string): Promise<Handover> {
+  return apiGet<Handover>(`${BASE}/handovers/${id}`);
 }
 
 export function completeHandover(
@@ -470,17 +790,95 @@ export function listSnags(params: {
   return apiGet<Snag[]>(`${BASE}/snags/?${qs.toString()}`);
 }
 
+export interface CreateSnagPayload {
+  handover_id: string;
+  buyer_id?: string | null;
+  category?: SnagCategory;
+  location_in_plot?: string | null;
+  severity?: SnagSeverity;
+  description: string;
+  status?: SnagStatus;
+  reported_at?: string | null;
+  cost_impact?: number | string;
+}
+
+export function createSnag(data: CreateSnagPayload): Promise<Snag> {
+  return apiPost<Snag>(`${BASE}/snags/`, data);
+}
+
+export interface UpdateSnagPayload {
+  category?: SnagCategory;
+  location_in_plot?: string | null;
+  severity?: SnagSeverity;
+  description?: string;
+  status?: SnagStatus;
+  fixed_at?: string | null;
+  fix_notes?: string | null;
+  cost_impact?: number;
+}
+
+export function updateSnag(id: string, data: UpdateSnagPayload): Promise<Snag> {
+  return apiPatch<Snag>(`${BASE}/snags/${id}`, data);
+}
+
+export function deleteSnag(id: string): Promise<void> {
+  return apiDelete(`${BASE}/snags/${id}`);
+}
+
+export function fixSnag(id: string, fix_notes?: string): Promise<Snag> {
+  const qs = fix_notes ? `?fix_notes=${encodeURIComponent(fix_notes)}` : '';
+  return apiPost<Snag>(`${BASE}/snags/${id}/fix${qs}`, {});
+}
+
+export function wontFixSnag(id: string, fix_notes?: string): Promise<Snag> {
+  const qs = fix_notes ? `?fix_notes=${encodeURIComponent(fix_notes)}` : '';
+  return apiPost<Snag>(`${BASE}/snags/${id}/wont-fix${qs}`, {});
+}
+
+export async function uploadSnagPhoto(id: string, file: File): Promise<Snag> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const token = localStorage.getItem('oe_access_token');
+  const res = await fetch(`/api${BASE}/snags/${id}/photos/`, {
+    method: 'POST',
+    headers: {
+      Authorization: token ? `Bearer ${token}` : '',
+      'X-DDC-Client': 'OE/1.0',
+    },
+    body: formData,
+  });
+  if (!res.ok) {
+    let detail = `Upload failed: ${res.statusText}`;
+    try {
+      const j = await res.json();
+      if (j?.detail) detail = String(j.detail);
+    } catch {
+      /* fallthrough — keep statusText */
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
 /* ── Warranty Claims ──────────────────────────────────────────────────── */
 
 export function listWarrantyClaims(params: {
   buyer_id?: string;
   plot_id?: string;
+  development_id?: string;
+  project_id?: string;
   status?: string;
+  category?: string;
+  severity?: string;
 }): Promise<WarrantyClaim[]> {
   const qs = new URLSearchParams();
   if (params.buyer_id) qs.set('buyer_id', params.buyer_id);
   if (params.plot_id) qs.set('plot_id', params.plot_id);
+  if (params.development_id) qs.set('development_id', params.development_id);
+  if (params.project_id) qs.set('project_id', params.project_id);
   if (params.status) qs.set('status', params.status);
+  if (params.category) qs.set('category', params.category);
+  if (params.severity) qs.set('severity', params.severity);
   return apiGet<WarrantyClaim[]>(`${BASE}/warranty-claims/?${qs.toString()}`);
 }
 
@@ -489,8 +887,39 @@ export function createWarrantyClaim(data: {
   buyer_id: string;
   description: string;
   category?: WarrantyCategory;
+  severity?: WarrantySeverity;
+  handover_id?: string | null;
+  source_snag_id?: string | null;
+  assigned_to_user_id?: string | null;
+  sla_deadline?: string | null;
+  photos?: string[];
 }): Promise<WarrantyClaim> {
   return apiPost<WarrantyClaim>(`${BASE}/warranty-claims/`, data);
+}
+
+export function updateWarrantyClaim(
+  id: string,
+  data: Partial<{
+    description: string;
+    category: WarrantyCategory;
+    severity: WarrantySeverity;
+    status: WarrantyStatus;
+    assigned_to_user_id: string | null;
+    sla_deadline: string | null;
+    resolution_notes: string | null;
+    handover_id: string | null;
+  }>,
+): Promise<WarrantyClaim> {
+  return apiPatch<WarrantyClaim>(`${BASE}/warranty-claims/${id}`, data);
+}
+
+export function assignWarrantyClaim(
+  id: string,
+  assignedToUserId: string | null,
+): Promise<WarrantyClaim> {
+  return apiPost<WarrantyClaim>(`${BASE}/warranty-claims/${id}/assign`, {
+    assigned_to_user_id: assignedToUserId,
+  });
 }
 
 export function acceptWarrantyClaim(id: string): Promise<WarrantyClaim> {
@@ -503,6 +932,19 @@ export function rejectWarrantyClaim(id: string): Promise<WarrantyClaim> {
 
 export function closeWarrantyClaim(id: string): Promise<WarrantyClaim> {
   return apiPost<WarrantyClaim>(`${BASE}/warranty/${id}/close`, {});
+}
+
+export function warrantyClaimPdfUrl(id: string): string {
+  return `/api${BASE}/warranty-claims/${id}/pdf`;
+}
+
+export function createWarrantyClaimFromSnag(
+  snagId: string,
+): Promise<WarrantyClaim> {
+  return apiPost<WarrantyClaim>(
+    `${BASE}/warranty-claims/from-snag/${snagId}`,
+    {},
+  );
 }
 
 
@@ -561,6 +1003,13 @@ export interface Lead {
   id: string;
   development_id: string | null;
   tenant_id: string | null;
+  /**
+   * Contacts module bridge (v3117). When set, the canonical person
+   * data (name, email, phone) lives in the Contacts module — the
+   * Lead keeps only lead-specific fields (score, source, status, …).
+   * Best-effort: legacy rows (pre-v3117) may have this NULL.
+   */
+  contact_id: string | null;
   source: LeadSource;
   lead_score: number | string;
   assigned_agent_user_id: string | null;
@@ -808,8 +1257,36 @@ export function listLeads(params?: {
   return apiGet<Lead[]>(`${BASE}/leads/${q ? `?${q}` : ''}`);
 }
 
-export function createLead(data: CreateLeadPayload): Promise<Lead> {
-  return apiPost<Lead>(`${BASE}/leads/`, data);
+/**
+ * Fetch the Contacts directory entry linked to a Lead (or 404 if not linked).
+ */
+export function getLeadContact(leadId: string): Promise<{
+  id: string;
+  contact_type: string;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
+  primary_email: string | null;
+  primary_phone: string | null;
+  country_code: string | null;
+  module_tags: string[];
+}> {
+  return apiGet(`${BASE}/leads/${leadId}/contact`);
+}
+
+/**
+ * Create a Lead. ``syncToContacts`` defaults to true — the Contacts
+ * directory gets a mirror entry tagged ``property_dev_lead``. Pass
+ * false to skip the sync (rare; mostly used by automated importers
+ * that already manage contacts separately).
+ */
+export function createLead(
+  data: CreateLeadPayload,
+  opts: { syncToContacts?: boolean } = {},
+): Promise<Lead> {
+  const { syncToContacts = true } = opts;
+  const qs = syncToContacts ? '' : '?sync_to_contacts=false';
+  return apiPost<Lead>(`${BASE}/leads/${qs}`, data);
 }
 
 export function getLead(id: string): Promise<Lead> {
@@ -894,10 +1371,15 @@ export function convertReservationToSpa(
 /* ── SalesContract (SPA) endpoints ────────────────────────────────── */
 
 export function listSalesContracts(params: {
-  plot_id: string;
+  plot_id?: string;
+  development_id?: string;
+  reservation_id?: string;
   status?: SpaStatus;
 }): Promise<SalesContract[]> {
-  const qs = new URLSearchParams({ plot_id: params.plot_id });
+  const qs = new URLSearchParams();
+  if (params.plot_id) qs.set('plot_id', params.plot_id);
+  if (params.development_id) qs.set('development_id', params.development_id);
+  if (params.reservation_id) qs.set('reservation_id', params.reservation_id);
   if (params.status) qs.set('status', params.status);
   return apiGet<SalesContract[]>(`${BASE}/sales-contracts/?${qs.toString()}`);
 }
@@ -972,6 +1454,64 @@ export function fetchContractTaxQuote(
 }
 
 /* ── Payment schedules + instalments ──────────────────────────────── */
+
+/**
+ * Milestone-based payment schedule template descriptor returned by
+ * ``GET /payment-schedule-templates/``. Pure data — used to populate
+ * the "Generate Schedule" picker in the SPA detail tab.
+ */
+export interface PaymentScheduleTemplate {
+  key: string;
+  label: string;
+  description: string;
+  milestone_count: number;
+  splits: string[];
+}
+
+export function listPaymentScheduleTemplates(): Promise<
+  PaymentScheduleTemplate[]
+> {
+  return apiGet<PaymentScheduleTemplate[]>(
+    `${BASE}/payment-schedule-templates/`,
+  );
+}
+
+export interface GeneratePaymentSchedulePayload {
+  sales_contract_id: string;
+  template_key: string;
+  start_date?: string;
+  late_fee_pct?: number | string;
+  grace_period_days?: number;
+}
+
+export function generatePaymentScheduleFromTemplate(
+  data: GeneratePaymentSchedulePayload,
+): Promise<PaymentSchedule> {
+  return apiPost<PaymentSchedule>(
+    `${BASE}/payment-schedules/from-template`,
+    data,
+  );
+}
+
+/**
+ * List payment schedules either by SPA or by development. The top-level
+ * "Payment Schedules" tab uses ``development_id``; the SPA detail uses
+ * ``sales_contract_id``. Mirrors the backend gating.
+ */
+export function listPaymentSchedules(params: {
+  sales_contract_id?: string;
+  development_id?: string;
+  status?: PaymentScheduleStatus;
+}): Promise<PaymentSchedule[]> {
+  const qs = new URLSearchParams();
+  if (params.sales_contract_id)
+    qs.set('sales_contract_id', params.sales_contract_id);
+  if (params.development_id) qs.set('development_id', params.development_id);
+  if (params.status) qs.set('status', params.status);
+  return apiGet<PaymentSchedule[]>(
+    `${BASE}/payment-schedules/?${qs.toString()}`,
+  );
+}
 
 export function getPaymentSchedule(id: string): Promise<PaymentSchedule> {
   return apiGet<PaymentSchedule>(`${BASE}/payment-schedules/${id}`);
@@ -1331,6 +1871,10 @@ export function verifyBrokerKyc(id: string): Promise<Broker> {
   return apiPost<Broker>(`${BASE}/brokers/${id}/verify-kyc`, {});
 }
 
+export function deleteBroker(id: string): Promise<void> {
+  return apiDelete(`${BASE}/brokers/${id}`);
+}
+
 /* ── Commission Agreements ───────────────────────────────────────── */
 
 export function listCommissionAgreements(params: {
@@ -1411,6 +1955,24 @@ export function createEscrowAccount(data: {
   return apiPost<EscrowAccount>(`${BASE}/escrow-accounts/`, data);
 }
 
+export function updateEscrowAccount(
+  id: string,
+  data: Partial<{
+    regulator_account_number: string;
+    bank_name: string;
+    iban: string;
+    swift_bic: string;
+    closed_at: string | null;
+    is_active: boolean;
+  }>,
+): Promise<EscrowAccount> {
+  return apiPatch<EscrowAccount>(`${BASE}/escrow-accounts/${id}`, data);
+}
+
+export function deleteEscrowAccount(id: string): Promise<void> {
+  return apiDelete(`${BASE}/escrow-accounts/${id}`);
+}
+
 export function getEscrowBalance(
   id: string,
   as_of_date?: string,
@@ -1481,6 +2043,25 @@ export function activatePriceMatrix(id: string): Promise<PriceMatrix> {
   return apiPost<PriceMatrix>(`${BASE}/price-matrices/${id}/activate`, {});
 }
 
+export function updatePriceMatrix(
+  id: string,
+  data: Partial<{
+    name: string;
+    base_price_per_m2: number | string;
+    currency: string;
+    effective_from: string;
+    effective_to: string | null;
+    rules: PriceMatrixRule[];
+    status: PriceMatrixStatus;
+  }>,
+): Promise<PriceMatrix> {
+  return apiPatch<PriceMatrix>(`${BASE}/price-matrices/${id}`, data);
+}
+
+export function deletePriceMatrix(id: string): Promise<void> {
+  return apiDelete(`${BASE}/price-matrices/${id}`);
+}
+
 export function previewPriceOnPlot(
   matrix_id: string,
   plot_id: string,
@@ -1514,8 +2095,26 @@ export function createPhase(data: {
   sequence?: number;
   planned_start?: string;
   planned_end?: string;
+  status?: PhaseStatus;
 }): Promise<Phase> {
   return apiPost<Phase>(`${BASE}/phases/`, data);
+}
+
+export function updatePhase(
+  id: string,
+  data: Partial<{
+    name: string;
+    sequence: number;
+    planned_start: string | null;
+    planned_end: string | null;
+    status: PhaseStatus;
+  }>,
+): Promise<Phase> {
+  return apiPatch<Phase>(`${BASE}/phases/${id}`, data);
+}
+
+export function deletePhase(id: string): Promise<void> {
+  return apiDelete(`${BASE}/phases/${id}`);
 }
 
 export function listBlocks(phase_id: string): Promise<Block[]> {
@@ -1530,8 +2129,26 @@ export function createBlock(data: {
   levels_count?: number;
   units_per_level?: number;
   orientation?: string;
+  status?: BlockStatus;
 }): Promise<Block> {
   return apiPost<Block>(`${BASE}/blocks/`, data);
+}
+
+export function updateBlock(
+  id: string,
+  data: Partial<{
+    name: string;
+    levels_count: number;
+    units_per_level: number;
+    orientation: string | null;
+    status: BlockStatus;
+  }>,
+): Promise<Block> {
+  return apiPatch<Block>(`${BASE}/blocks/${id}`, data);
+}
+
+export function deleteBlock(id: string): Promise<void> {
+  return apiDelete(`${BASE}/blocks/${id}`);
 }
 
 /* ── Regulator Reports ───────────────────────────────────────────── */
@@ -1904,6 +2521,185 @@ export function previewPropDevDocument(
     `${BASE}/documents/preview`,
     params,
   );
+}
+
+/* ── Document Template catalogue (settings page) ──────────────────────── */
+
+export type CustomDocType =
+  | 'custom'
+  | 'snag_report'
+  | 'invoice'
+  | 'payment_reminder'
+  | 'kyc_checklist'
+  | 'brokerage_commission';
+
+/**
+ * Catalogue entry: either a built-in PropDev PDF generator
+ * (``is_custom: false``) or a tenant-uploaded template
+ * (``is_custom: true``). Both shapes share the metadata fields; only
+ * custom entries carry storage info (id, filename, content_type, …).
+ */
+export interface DocumentTemplateEntry {
+  doc_type: PropDevDocType | CustomDocType | string;
+  title: string;
+  description: string;
+  trigger: string;
+  entity: string;
+  pages: string;
+  is_custom?: boolean;
+  // Present only when is_custom === true
+  id?: string;
+  filename?: string;
+  content_type?: string;
+  size_bytes?: number;
+  development_id?: string | null;
+  project_id?: string | null;
+  created_at?: string | null;
+}
+
+export interface DocumentTemplateVariableGroup {
+  group: string;
+  label: string;
+  vars: { key: string; desc: string }[];
+}
+
+export interface DocumentTemplateUploadConfig {
+  allowed_extensions: string[];
+  max_size_mb: number;
+}
+
+export interface DocumentTemplateCatalogue {
+  templates: DocumentTemplateEntry[];
+  locales: string[];
+  regulators: string[];
+  variables?: DocumentTemplateVariableGroup[];
+  upload?: DocumentTemplateUploadConfig;
+}
+
+export function listDocumentTemplates(
+  developmentId?: string,
+): Promise<DocumentTemplateCatalogue> {
+  const qs = developmentId
+    ? `?development_id=${encodeURIComponent(developmentId)}`
+    : '';
+  return apiGet<DocumentTemplateCatalogue>(
+    `${BASE}/document-templates/${qs}`,
+  );
+}
+
+/**
+ * Upload a tenant-owned custom template (.docx / .html / .pdf / .odt / …).
+ *
+ * Multipart form-data. Backend caps file size at 10 MB and validates the
+ * extension server-side.
+ */
+export async function uploadCustomDocumentTemplate(opts: {
+  file: File;
+  name: string;
+  doc_type: string;
+  entity: string;
+  trigger?: string;
+  description?: string;
+  project_id?: string;
+  development_id?: string;
+}): Promise<DocumentTemplateEntry> {
+  const form = new FormData();
+  form.append('file', opts.file);
+  const params = new URLSearchParams();
+  params.set('name', opts.name);
+  params.set('doc_type', opts.doc_type);
+  params.set('entity', opts.entity);
+  if (opts.trigger) params.set('trigger', opts.trigger);
+  if (opts.description) params.set('description', opts.description);
+  if (opts.project_id) params.set('project_id', opts.project_id);
+  if (opts.development_id) params.set('development_id', opts.development_id);
+
+  // Multipart needs the browser to set Content-Type with its own boundary,
+  // so we can't reuse the apiPost JSON wrapper — issue the fetch directly
+  // and attach the JWT manually.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  const { useAuthStore } = require('@/stores/useAuthStore');
+  const token = useAuthStore.getState().accessToken as string | null;
+  const headers: Record<string, string> = { 'X-DDC-Client': 'OE/1.0' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(
+    `/api/v1/property-dev/document-templates/upload?${params.toString()}`,
+    { method: 'POST', headers, body: form },
+  );
+  if (!res.ok) {
+    let detail = `${res.status}`;
+    try {
+      const j = (await res.json()) as { detail?: string };
+      if (j?.detail) detail = j.detail;
+    } catch {
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+    }
+    throw new Error(detail);
+  }
+  return (await res.json()) as DocumentTemplateEntry;
+}
+
+export function deleteCustomDocumentTemplate(
+  templateId: string,
+): Promise<void> {
+  return apiDelete<void>(
+    `${BASE}/document-templates/custom/${encodeURIComponent(templateId)}`,
+  );
+}
+
+/**
+ * Absolute download URL for a previously-uploaded custom template. The
+ * endpoint streams the original bytes with the original filename in
+ * Content-Disposition. RBAC + project-ownership gated, so an
+ * unauthorised browser tab will hit 401 / 404.
+ */
+export function customDocumentTemplateDownloadUrl(
+  templateId: string,
+): string {
+  return `/api/v1/property-dev/document-templates/custom/${encodeURIComponent(
+    templateId,
+  )}/download`;
+}
+
+export interface SampleDocumentPreview extends PropDevDocPreview {
+  regulator: string;
+  sample: boolean;
+}
+
+export function sampleDocumentPreview(
+  docType: PropDevDocType,
+  locale: string,
+  regulator: string,
+): Promise<SampleDocumentPreview> {
+  return apiPost<SampleDocumentPreview>(
+    `${BASE}/document-templates/${docType}/sample-preview`,
+    { locale, regulator },
+  );
+}
+
+/* ── Validation rule sets (read-only registry view) ───────────────────── */
+
+export interface ValidationRuleSetEntry {
+  name: string;
+  description: string;
+  rule_count: number;
+  rules: Array<{
+    rule_id: string;
+    name: string;
+    standard: string;
+    severity: string;
+    category: string;
+    enabled: boolean;
+  }>;
+}
+
+export function listValidationRuleSets(): Promise<ValidationRuleSetEntry[]> {
+  return apiGet<ValidationRuleSetEntry[]>('/v1/validation/rule-sets/');
 }
 
 /**

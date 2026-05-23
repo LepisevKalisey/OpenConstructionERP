@@ -42,6 +42,7 @@ from app.modules.property_dev.models import (
     Phase,
     Plot,
     PriceMatrix,
+    PropertyDevHouseType,
     Reservation,
     SalesContract,
     Snag,
@@ -115,6 +116,8 @@ from app.modules.property_dev.schemas import (
     PlotCreate,
     PlotReserveRequest,
     PlotUpdate,
+    PropertyDevHouseTypeCreate,
+    PropertyDevHouseTypeUpdate,
     ReservationConvertToSpaRequest,
     ReservationCreate,
     ReservationUpdate,
@@ -168,7 +171,11 @@ _HANDOVER_TRANSITIONS: dict[str, set[str]] = {
 }
 
 _WARRANTY_TRANSITIONS: dict[str, set[str]] = {
-    "raised": {"under_review", "rejected", "closed"},
+    # ``raised`` may be triaged into ``under_review`` or accepted /
+    # rejected straight away — the UI's Accept / Reject buttons on a
+    # raised claim shortcut the triage step (v3113 — was blocking the
+    # WarrantyTab Accept button).
+    "raised": {"under_review", "accepted", "rejected", "closed"},
     "under_review": {"accepted", "rejected", "closed"},
     "accepted": {"closed"},
     "rejected": {"closed"},
@@ -233,7 +240,11 @@ _PAYMENT_SCHEDULE_TRANSITIONS: dict[str, set[str]] = {
 
 
 _INSTALMENT_TRANSITIONS: dict[str, set[str]] = {
-    "pending": {"due", "waived", "cancelled"},
+    # Allow ``pending → paid`` directly so an early payment from the
+    # buyer (before the demand-letter / "due" transition has fired)
+    # doesn't 409. Real-world UX: the user marks paid the moment they
+    # see funds — they shouldn't have to flip the row to ``due`` first.
+    "pending": {"due", "paid", "waived", "cancelled"},
     "due": {"overdue", "paid", "waived", "cancelled"},
     "overdue": {"paid", "waived", "cancelled"},
     "paid": set(),
@@ -717,8 +728,166 @@ def _today_iso() -> str:
     return datetime.now(UTC).date().isoformat()
 
 
+# ── Payment-schedule milestone templates ────────────────────────────────
+#
+# Pure data — no DB, no I/O. Each template is a sequence of milestone
+# entries summing to 100 % of contract value. ``offset_days`` is added to
+# the chosen start date to derive ``due_date``. ``milestone_event`` is
+# carried through to ``Instalment.milestone_event`` so downstream
+# automations (handover trigger, fit-out trigger, etc.) can fire the
+# right line. The catalogue is intentionally short; tenants needing
+# more variations should compose them via :class:`PaymentScheduleCreate`
+# + :class:`InstalmentCreate`.
+
+PAYMENT_SCHEDULE_TEMPLATES: dict[str, dict[str, Any]] = {
+    "single_balance": {
+        "label": "Single balance on SPA signing",
+        "description": "One instalment for 100 % at SPA signing.",
+        "milestones": [
+            {
+                "sequence": 1,
+                "pct": Decimal("100"),
+                "label": "Full balance @ SPA signature",
+                "milestone_event": "spa_signed",
+                "offset_days": 0,
+            },
+        ],
+    },
+    "10_40_50": {
+        "label": "10 % / 40 % / 50 %",
+        "description": "10 % deposit, 40 % at top-out, 50 % at handover.",
+        "milestones": [
+            {
+                "sequence": 1,
+                "pct": Decimal("10"),
+                "label": "Deposit",
+                "milestone_event": "spa_signed",
+                "offset_days": 0,
+            },
+            {
+                "sequence": 2,
+                "pct": Decimal("40"),
+                "label": "Top-out",
+                "milestone_event": "construction_top_out",
+                "offset_days": 180,
+            },
+            {
+                "sequence": 3,
+                "pct": Decimal("50"),
+                "label": "Handover",
+                "milestone_event": "handover_complete",
+                "offset_days": 360,
+            },
+        ],
+    },
+    "30_30_40": {
+        "label": "30 % / 30 % / 40 %",
+        "description": "30 % at signing, 30 % at top-out, 40 % at handover.",
+        "milestones": [
+            {
+                "sequence": 1,
+                "pct": Decimal("30"),
+                "label": "Down payment",
+                "milestone_event": "spa_signed",
+                "offset_days": 0,
+            },
+            {
+                "sequence": 2,
+                "pct": Decimal("30"),
+                "label": "Top-out",
+                "milestone_event": "construction_top_out",
+                "offset_days": 180,
+            },
+            {
+                "sequence": 3,
+                "pct": Decimal("40"),
+                "label": "Handover",
+                "milestone_event": "handover_complete",
+                "offset_days": 360,
+            },
+        ],
+    },
+    "20_30_30_20": {
+        "label": "20 % / 30 % / 30 % / 20 %",
+        "description": (
+            "20 % at signing, 30 % at slab, 30 % at top-out, 20 % at handover."
+        ),
+        "milestones": [
+            {
+                "sequence": 1,
+                "pct": Decimal("20"),
+                "label": "Down payment",
+                "milestone_event": "spa_signed",
+                "offset_days": 0,
+            },
+            {
+                "sequence": 2,
+                "pct": Decimal("30"),
+                "label": "Foundation slab",
+                "milestone_event": "construction_slab_poured",
+                "offset_days": 90,
+            },
+            {
+                "sequence": 3,
+                "pct": Decimal("30"),
+                "label": "Top-out",
+                "milestone_event": "construction_top_out",
+                "offset_days": 240,
+            },
+            {
+                "sequence": 4,
+                "pct": Decimal("20"),
+                "label": "Handover",
+                "milestone_event": "handover_complete",
+                "offset_days": 365,
+            },
+        ],
+    },
+    "quarterly_12": {
+        "label": "Equal quarterly over 12 quarters",
+        "description": "12 equal instalments at quarterly intervals.",
+        "milestones": [
+            {
+                "sequence": i + 1,
+                "pct": Decimal("100") / Decimal("12"),
+                "label": f"Quarter {i + 1}",
+                "milestone_event": "scheduled",
+                "offset_days": i * 90,
+            }
+            for i in range(12)
+        ],
+    },
+}
+
+
+def _add_days_iso(start_iso: str, days: int) -> str:
+    """Return ``start_iso`` + ``days`` as a YYYY-MM-DD string."""
+    d = date.fromisoformat(start_iso[:10])
+    return (d + timedelta(days=days)).isoformat()
+
+
 class PropertyDevService:
     """Business logic + workflow orchestration."""
+
+    # Keep the templates discoverable on the class so the router can list
+    # them without importing the module-level constant directly.
+    PAYMENT_SCHEDULE_TEMPLATES = PAYMENT_SCHEDULE_TEMPLATES
+
+    @staticmethod
+    def payment_schedule_template_catalogue() -> list[dict[str, Any]]:
+        """Return a stable, serialisable catalogue of milestone templates."""
+        out: list[dict[str, Any]] = []
+        for key, tmpl in PAYMENT_SCHEDULE_TEMPLATES.items():
+            out.append(
+                {
+                    "key": key,
+                    "label": tmpl["label"],
+                    "description": tmpl["description"],
+                    "milestone_count": len(tmpl["milestones"]),
+                    "splits": [str(m["pct"]) for m in tmpl["milestones"]],
+                }
+            )
+        return out
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -761,14 +930,30 @@ class PropertyDevService:
             project_id=data.project_id,
             code=data.code,
             name=data.name,
+            description=data.description,
+            dev_type=data.dev_type,
             location_address=data.location_address,
+            country_code=data.country_code,
+            latitude=data.latitude,
+            longitude=data.longitude,
             total_plots=data.total_plots,
+            total_area_m2=data.total_area_m2,
+            total_floors=data.total_floors,
             sales_phase=data.sales_phase,
+            start_date=data.start_date,
             launch_date=data.launch_date,
             completion_date=data.completion_date,
             marketing_brief=data.marketing_brief,
             status=data.status,
             units=data.units,
+            sales_target_amount=data.sales_target_amount,
+            currency=data.currency,
+            developer_name=data.developer_name,
+            architect_name=data.architect_name,
+            general_contractor_name=data.general_contractor_name,
+            cover_image_url=data.cover_image_url,
+            brochure_url=data.brochure_url,
+            website_url=data.website_url,
             metadata_=data.metadata,
         )
         return await self.developments.create(obj)
@@ -829,6 +1014,300 @@ class PropertyDevService:
         await self.get_house_type(ht_id)
         await self.house_types.delete(ht_id)
 
+    # ── House Type Catalogue (preset + user-created) ────────────────────
+    #
+    # Distinct from the per-Development HouseType above: these are the
+    # lightweight classification entries shown in the Plot create dialog
+    # so the user can pick e.g. "Reihenhaus" / "Townhouse" without
+    # modelling a full floor plan. Project_id NULL + is_preset=True means
+    # "global preset" (migration-seeded); project_id set + is_preset=False
+    # means "this tenant's custom entry, scoped to one project".
+
+    async def _verify_project_owner_for_house_type_catalogue(
+        self,
+        project_id: uuid.UUID,
+        user_payload: dict[str, object] | None,
+    ) -> None:
+        """Confirm the caller owns the project — collapse "not yours" to 404.
+
+        Mirrors the cross-tenant IDOR guard used elsewhere in property_dev
+        (see :func:`router._verify_buyer_owner`). Admins bypass.
+        """
+        if user_payload is None:
+            # Service-layer caller without payload (tests / migrations).
+            return
+        if user_payload.get("role") == "admin":
+            return
+        user_id = user_payload.get("sub") or user_payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
+            )
+        from app.modules.projects.repository import ProjectRepository
+
+        project = await ProjectRepository(self.session).get_by_id(project_id)
+        if project is None or str(project.owner_id) != str(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
+            )
+
+    async def list_house_type_catalogue(
+        self,
+        *,
+        country_code: str | None = None,
+        project_id: uuid.UUID | None = None,
+        user_payload: dict[str, object] | None = None,
+    ) -> list[PropertyDevHouseType]:
+        """Return presets + tenant-created entries.
+
+        - Presets (``project_id IS NULL``, ``is_preset=True``) are visible
+          to every caller. Filtering by ``country_code`` keeps the result
+          tight when the caller knows the project's country.
+        - ``project_id``-scoped entries are returned only when the caller
+          owns the project (admins see everything).
+        - Tenant-created entries with the same ``code`` as a preset
+          override the preset in the response (this lets the user replace
+          "REIHENHAUS" with their own labelled / sized version without
+          losing the preset for other projects).
+        """
+        from sqlalchemy import or_, select
+
+        # Optional project-ownership gate; if user_payload is None
+        # (e.g. internal service call) we skip and return the union.
+        if project_id is not None and user_payload is not None:
+            await self._verify_project_owner_for_house_type_catalogue(
+                project_id, user_payload
+            )
+
+        clauses = []
+        # Always include presets.
+        preset_clause = (
+            (PropertyDevHouseType.project_id.is_(None))
+            & (PropertyDevHouseType.is_preset.is_(True))
+        )
+        clauses.append(preset_clause)
+        if project_id is not None:
+            clauses.append(PropertyDevHouseType.project_id == project_id)
+
+        stmt = select(PropertyDevHouseType).where(or_(*clauses))
+        if country_code:
+            # Match exact country OR region-agnostic (NULL) entries.
+            stmt = stmt.where(
+                or_(
+                    PropertyDevHouseType.country_code == country_code.upper(),
+                    PropertyDevHouseType.country_code.is_(None),
+                )
+            )
+
+        rows = (await self.session.execute(stmt)).scalars().all()
+
+        # Override presets with same-code tenant rows. Key by
+        # (country_code, code) so a "REIHENHAUS"/DE override only beats
+        # the DE preset, never the FR one.
+        by_key: dict[tuple[str | None, str], PropertyDevHouseType] = {}
+        # First pass: presets (will be overwritten by tenant rows).
+        for row in rows:
+            if row.project_id is None:
+                by_key[(row.country_code, row.code)] = row
+        # Second pass: tenant rows override.
+        for row in rows:
+            if row.project_id is not None:
+                by_key[(row.country_code, row.code)] = row
+
+        # Stable sort: country_code (None first), then code.
+        return sorted(
+            by_key.values(),
+            key=lambda r: (r.country_code or "", r.code),
+        )
+
+    async def get_house_type_catalogue_entry(
+        self,
+        entry_id: uuid.UUID,
+        user_payload: dict[str, object] | None = None,
+    ) -> PropertyDevHouseType:
+        obj = await self.session.get(PropertyDevHouseType, entry_id)
+        if obj is None:
+            raise HTTPException(
+                status_code=404, detail="House type catalogue entry not found"
+            )
+        # Tenant-scoped entries are only visible to their owner.
+        if obj.project_id is not None and user_payload is not None:
+            await self._verify_project_owner_for_house_type_catalogue(
+                obj.project_id, user_payload
+            )
+        return obj
+
+    async def create_house_type_catalogue_entry(
+        self,
+        data: PropertyDevHouseTypeCreate,
+        user_payload: dict[str, object] | None = None,
+    ) -> PropertyDevHouseType:
+        """Create a user-scoped catalogue entry. Presets stay migration-only."""
+        await self._verify_project_owner_for_house_type_catalogue(
+            data.project_id, user_payload
+        )
+        user_id_raw = (
+            (user_payload or {}).get("sub")
+            or (user_payload or {}).get("user_id")
+        )
+        try:
+            created_by = uuid.UUID(str(user_id_raw)) if user_id_raw else None
+        except (ValueError, TypeError):
+            created_by = None
+
+        # Pricing sanity: if both ends supplied, max must be ≥ min.
+        if (
+            data.typical_price_min is not None
+            and data.typical_price_max is not None
+            and data.typical_price_max < data.typical_price_min
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="typical_price_max must be ≥ typical_price_min",
+            )
+        currency = data.currency.upper() if data.currency else None
+        construction_type = (
+            data.construction_type.strip().lower() or None
+            if data.construction_type
+            else None
+        )
+        energy_class = (
+            data.energy_class.strip() or None if data.energy_class else None
+        )
+        sales_channel = (
+            data.sales_channel.strip().lower() or None
+            if data.sales_channel
+            else None
+        )
+        # Tags: dedupe + strip + drop empties, preserve order.
+        tags_clean: list[str] = []
+        for raw in (data.tags or []):
+            t = (raw or "").strip()
+            if t and t not in tags_clean:
+                tags_clean.append(t)
+
+        obj = PropertyDevHouseType(
+            project_id=data.project_id,
+            country_code=(
+                data.country_code.upper() if data.country_code else None
+            ),
+            region_label=(data.region_label.strip() or None)
+            if data.region_label
+            else None,
+            code=data.code.upper(),
+            name=data.name,
+            description=data.description,
+            area_typical_m2=data.area_typical_m2,
+            floors_typical=data.floors_typical,
+            typical_bedrooms=data.typical_bedrooms,
+            typical_bathrooms=data.typical_bathrooms,
+            parking_spots=data.parking_spots,
+            typical_price_min=data.typical_price_min,
+            typical_price_max=data.typical_price_max,
+            currency=currency,
+            construction_type=construction_type,
+            energy_class=energy_class,
+            sales_channel=sales_channel,
+            image_url=data.image_url,
+            tags=tags_clean,
+            is_preset=False,
+            created_by=created_by,
+        )
+        self.session.add(obj)
+        try:
+            await self.session.flush()
+        except Exception as exc:  # noqa: BLE001 — surface as 409 conflict
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "A catalogue entry with this code already exists "
+                    "for this project / country"
+                ),
+            ) from exc
+        return obj
+
+    async def update_house_type_catalogue_entry(
+        self,
+        entry_id: uuid.UUID,
+        data: PropertyDevHouseTypeUpdate,
+        user_payload: dict[str, object] | None = None,
+    ) -> PropertyDevHouseType:
+        obj = await self.get_house_type_catalogue_entry(entry_id, user_payload)
+        if obj.is_preset:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Cannot edit a preset catalogue entry; "
+                    "create a project-scoped override instead"
+                ),
+            )
+        payload = data.model_dump(exclude_unset=True)
+        if "country_code" in payload and payload["country_code"]:
+            payload["country_code"] = payload["country_code"].upper()
+        if "region_label" in payload and payload["region_label"]:
+            payload["region_label"] = payload["region_label"].strip() or None
+        if "currency" in payload and payload["currency"]:
+            payload["currency"] = payload["currency"].upper()
+        if "construction_type" in payload and payload["construction_type"]:
+            payload["construction_type"] = (
+                payload["construction_type"].strip().lower() or None
+            )
+        if "sales_channel" in payload and payload["sales_channel"]:
+            payload["sales_channel"] = (
+                payload["sales_channel"].strip().lower() or None
+            )
+        if "energy_class" in payload and payload["energy_class"]:
+            payload["energy_class"] = payload["energy_class"].strip() or None
+        # Pricing sanity (against the merged effective values).
+        new_min = (
+            payload.get("typical_price_min")
+            if "typical_price_min" in payload
+            else obj.typical_price_min
+        )
+        new_max = (
+            payload.get("typical_price_max")
+            if "typical_price_max" in payload
+            else obj.typical_price_max
+        )
+        if (
+            new_min is not None
+            and new_max is not None
+            and new_max < new_min
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="typical_price_max must be ≥ typical_price_min",
+            )
+        if "tags" in payload and payload["tags"] is not None:
+            tags_clean: list[str] = []
+            for raw in payload["tags"]:
+                t = (raw or "").strip()
+                if t and t not in tags_clean:
+                    tags_clean.append(t)
+            payload["tags"] = tags_clean
+        for key, value in payload.items():
+            setattr(obj, key, value)
+        await self.session.flush()
+        self.session.expire(obj)
+        return await self.get_house_type_catalogue_entry(entry_id, user_payload)
+
+    async def delete_house_type_catalogue_entry(
+        self,
+        entry_id: uuid.UUID,
+        user_payload: dict[str, object] | None = None,
+    ) -> None:
+        obj = await self.get_house_type_catalogue_entry(entry_id, user_payload)
+        if obj.is_preset:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot delete a preset catalogue entry",
+            )
+        await self.session.delete(obj)
+        await self.session.flush()
+
     # ── Variant ─────────────────────────────────────────────────────────
 
     async def create_variant(
@@ -869,13 +1348,21 @@ class PropertyDevService:
             plot_number=data.plot_number,
             house_type_id=data.house_type_id,
             house_type_variant_id=data.house_type_variant_id,
+            house_type_label=data.house_type_label,
             # Task #138 — Phase/Block hierarchy fields.
             block_id=data.block_id,
             level_in_block=data.level_in_block,
             position_on_floor=data.position_on_floor,
             orientation=data.orientation,
+            view_type=data.view_type,
             area_m2=data.area_m2,
             garden_area_m2=data.garden_area_m2,
+            balcony_area_m2=data.balcony_area_m2,
+            storage_area_m2=data.storage_area_m2,
+            bedrooms=data.bedrooms,
+            bathrooms=data.bathrooms,
+            parking_spaces=data.parking_spaces,
+            sun_exposure_hours=data.sun_exposure_hours,
             price_base=data.price_base,
             currency=data.currency,
             status=data.status,
@@ -1063,7 +1550,28 @@ class PropertyDevService:
 
     # ── Buyer ───────────────────────────────────────────────────────────
 
-    async def create_buyer(self, data: BuyerCreate) -> Buyer:
+    async def create_buyer(
+        self,
+        data: BuyerCreate,
+        *,
+        sync_to_contacts: bool = True,
+        tenant_id: str | None = None,
+    ) -> Buyer:
+        """Create a Buyer row and (by default) sync it to the Contacts directory.
+
+        ``sync_to_contacts``:
+            When True (default for UI-driven flows) the bridge finds-or-
+            creates a Contact for the buyer's email and links it via
+            ``buyer.contact_id``. The contact's ``module_tags`` array
+            picks up ``'property_dev_buyer'``.
+
+            Set to False for portal-driven flows where the buyer signs
+            up anonymously and we don't yet want a directory entry.
+
+        ``tenant_id``:
+            The caller's user id — used to scope the contact lookup.
+            Falls back to None (admin / system context) when omitted.
+        """
         obj = Buyer(
             development_id=data.development_id,
             plot_id=data.plot_id,
@@ -1077,7 +1585,20 @@ class PropertyDevService:
             currency=data.currency,
             metadata_=data.metadata,
         )
-        return await self.buyers.create(obj)
+        created = await self.buyers.create(obj)
+        if sync_to_contacts and (created.email or created.full_name):
+            try:
+                from app.modules.contacts import bridge as _contacts_bridge
+
+                await _contacts_bridge.ensure_contact_for_buyer(
+                    self.session, created, tenant_id=tenant_id
+                )
+            except Exception:  # noqa: BLE001 — bridge is best-effort
+                logger.exception(
+                    "Contacts bridge failed for buyer %s; continuing without link",
+                    created.id,
+                )
+        return created
 
     async def get_buyer(self, b_id: uuid.UUID) -> Buyer:
         obj = await self.buyers.get_by_id(b_id)
@@ -1127,7 +1648,24 @@ class PropertyDevService:
                 detail="Currency must be a 3-letter ISO code",
             )
         await self.buyers.update_fields(b_id, **fields)
-        return await self.get_buyer(b_id)
+        updated = await self.get_buyer(b_id)
+        # Mirror canonical fields back to the linked Contact if any of
+        # name/email/phone were touched. Best-effort: a missing/broken
+        # contact never breaks the buyer update flow.
+        if updated.contact_id is not None and any(
+            k in fields for k in ("full_name", "email", "phone")
+        ):
+            try:
+                from app.modules.contacts import bridge as _contacts_bridge
+
+                await _contacts_bridge.mirror_buyer_fields_to_contact(
+                    self.session, updated
+                )
+            except Exception:  # noqa: BLE001
+                logger.exception(
+                    "Contacts mirror failed for buyer %s; continuing", updated.id
+                )
+        return updated
 
     async def delete_buyer(self, b_id: uuid.UUID) -> None:
         await self.get_buyer(b_id)
@@ -1586,16 +2124,51 @@ class PropertyDevService:
 
     # ── Warranty ────────────────────────────────────────────────────────
 
+    # Default warranty windows (years) used when computing
+    # ``is_in_warranty``. Structural defects: 10 years from handover.
+    # Cosmetic/finishing defects: 1 year. Matches the document_templates
+    # warranty-certificate defaults.
+    _STRUCTURAL_WARRANTY_YEARS_DEFAULT = 10
+    _FINISHING_WARRANTY_YEARS_DEFAULT = 1
+
     async def raise_warranty_claim(
         self, plot_id: uuid.UUID, buyer_id: uuid.UUID, data: WarrantyClaimCreate
     ) -> WarrantyClaim:
+        # Best-effort handover auto-link: if the caller didn't pass one
+        # but there's exactly one Handover on this plot, attach it so
+        # ``is_in_warranty`` can be computed without further round-trips.
+        handover_id = data.handover_id
+        if handover_id is None:
+            try:
+                from sqlalchemy import select as _select
+
+                from app.modules.property_dev.models import (
+                    Handover as _Handover,
+                )
+
+                row = (
+                    await self.session.execute(
+                        _select(_Handover).where(_Handover.plot_id == plot_id)
+                    )
+                ).scalar_one_or_none()
+                if row is not None:
+                    handover_id = row.id
+            except Exception:  # noqa: BLE001 — non-fatal best-effort
+                handover_id = None
+
         obj = WarrantyClaim(
             plot_id=plot_id,
             buyer_id=buyer_id,
+            handover_id=handover_id,
+            source_snag_id=data.source_snag_id,
+            assigned_to_user_id=data.assigned_to_user_id,
             raised_at=data.raised_at or _today_iso(),
             category=data.category,
+            severity=data.severity,
             description=data.description,
+            photos=list(data.photos or []),
             status="raised",
+            sla_deadline=data.sla_deadline,
             linked_service_ticket_id=data.linked_service_ticket_id,
             metadata_=data.metadata,
         )
@@ -1606,12 +2179,102 @@ class PropertyDevService:
                 "claim_id": str(claim.id),
                 "plot_id": str(plot_id),
                 "buyer_id": str(buyer_id),
+                "handover_id": (
+                    str(handover_id) if handover_id else None
+                ),
+                "source_snag_id": (
+                    str(data.source_snag_id) if data.source_snag_id else None
+                ),
                 "category": data.category,
+                "severity": data.severity,
                 "description": data.description[:200],
             },
             source_module="property_dev",
         )
         return claim
+
+    async def assign_warranty(
+        self, w_id: uuid.UUID, assignee_id: uuid.UUID | None
+    ) -> WarrantyClaim:
+        """Assign or unassign a warranty claim's contractor / PM owner."""
+        await self.get_warranty(w_id)
+        await self.warranty.update_fields(
+            w_id, assigned_to_user_id=assignee_id
+        )
+        claim = await self.get_warranty(w_id)
+        event_bus.publish_detached(
+            "property_dev.warranty.assigned",
+            data={
+                "claim_id": str(claim.id),
+                "assigned_to_user_id": (
+                    str(assignee_id) if assignee_id else None
+                ),
+            },
+            source_module="property_dev",
+        )
+        return claim
+
+    async def add_warranty_photo(
+        self, w_id: uuid.UUID, photo_path: str
+    ) -> WarrantyClaim:
+        """Append a relative photo path to ``warranty_claim.photos``.
+
+        Mirrors :meth:`add_snag_photo` — the router validates magic
+        bytes + writes the file before calling this.
+        """
+        claim = await self.get_warranty(w_id)
+        existing = list(claim.photos or [])
+        if photo_path not in existing:
+            existing.append(photo_path)
+            await self.warranty.update_fields(w_id, photos=existing)
+        return await self.get_warranty(w_id)
+
+    async def _is_in_warranty(self, claim: WarrantyClaim) -> bool:
+        """True when the claim was raised within the configured warranty
+        window from the linked Handover's completion date.
+
+        Categories ``structural`` and ``mep`` use the structural window
+        (default 10y). Everything else uses the finishing window (1y).
+        Returns False if the link, completion-date, or dates are
+        unparseable.
+        """
+        if not claim.handover_id or not claim.raised_at:
+            return False
+        try:
+            handover = await self.handovers.get_by_id(claim.handover_id)
+        except Exception:  # noqa: BLE001
+            return False
+        if handover is None or not handover.completed_at:
+            return False
+        from datetime import date as _date
+
+        try:
+            completed = _date.fromisoformat(handover.completed_at[:10])
+            raised = _date.fromisoformat(claim.raised_at[:10])
+        except ValueError:
+            return False
+        years = (
+            self._STRUCTURAL_WARRANTY_YEARS_DEFAULT
+            if claim.category in ("structural", "mep")
+            else self._FINISHING_WARRANTY_YEARS_DEFAULT
+        )
+        try:
+            cutoff = completed.replace(year=completed.year + years)
+        except ValueError:
+            # Feb-29 + N years on a non-leap year → fall back to Feb-28.
+            cutoff = completed.replace(
+                year=completed.year + years, day=28
+            )
+        return raised <= cutoff
+
+    async def warranty_response(self, claim: WarrantyClaim):
+        """Validate + decorate a WarrantyClaim into its API response shape."""
+        from app.modules.property_dev.schemas import WarrantyClaimResponse
+
+        in_warranty = await self._is_in_warranty(claim)
+        payload = WarrantyClaimResponse.model_validate(claim)
+        payload.is_in_warranty = in_warranty
+        return payload
 
     async def get_warranty(self, w_id: uuid.UUID) -> WarrantyClaim:
         obj = await self.warranty.get_by_id(w_id)
@@ -1920,8 +2583,23 @@ class PropertyDevService:
 
     # ── Lead ────────────────────────────────────────────────────────────
 
-    async def create_lead(self, data: LeadCreate) -> Lead:
-        """Create a new lead at the top of the funnel."""
+    async def create_lead(
+        self,
+        data: LeadCreate,
+        *,
+        sync_to_contacts: bool = True,
+        tenant_id: str | None = None,
+    ) -> Lead:
+        """Create a new lead at the top of the funnel.
+
+        ``sync_to_contacts`` (default True): find-or-create a Contact
+        for the lead's email and link it. The contact picks up the
+        ``'property_dev_lead'`` module tag. See
+        :mod:`app.modules.contacts.bridge` for the full rationale.
+
+        ``tenant_id``: caller's user id — scopes the contact lookup.
+        Falls back to ``data.tenant_id`` when None.
+        """
         if data.preferred_house_type_id is not None:
             ht = await self.house_types.get_by_id(data.preferred_house_type_id)
             if ht is None:
@@ -1954,6 +2632,27 @@ class PropertyDevService:
             metadata_=data.metadata,
         )
         lead = await self.leads.create(obj)
+        if sync_to_contacts and (lead.email or lead.full_name):
+            # Resolve the tenant: an explicit caller-supplied id wins;
+            # otherwise fall back to data.tenant_id (legacy payload
+            # form). The bridge writes the FK back onto ``lead`` and
+            # flushes so the next read sees the link.
+            resolved_tenant = (
+                tenant_id
+                if tenant_id is not None
+                else (str(data.tenant_id) if data.tenant_id else None)
+            )
+            try:
+                from app.modules.contacts import bridge as _contacts_bridge
+
+                await _contacts_bridge.ensure_contact_for_lead(
+                    self.session, lead, tenant_id=resolved_tenant
+                )
+            except Exception:  # noqa: BLE001
+                logger.exception(
+                    "Contacts bridge failed for lead %s; continuing without link",
+                    lead.id,
+                )
         event_bus.publish_detached(
             "property_dev.lead.created",
             data={
@@ -1986,7 +2685,22 @@ class PropertyDevService:
                 "lead", lead.status, new_status, allowed_lead_transitions
             )
         await self.leads.update_fields(lead_id, **fields)
-        return await self.get_lead(lead_id)
+        updated = await self.get_lead(lead_id)
+        # Mirror canonical fields back to the linked Contact (best-effort).
+        if updated.contact_id is not None and any(
+            k in fields for k in ("full_name", "email", "phone")
+        ):
+            try:
+                from app.modules.contacts import bridge as _contacts_bridge
+
+                await _contacts_bridge.mirror_lead_fields_to_contact(
+                    self.session, updated
+                )
+            except Exception:  # noqa: BLE001
+                logger.exception(
+                    "Contacts mirror failed for lead %s; continuing", updated.id
+                )
+        return updated
 
     async def delete_lead(self, lead_id: uuid.UUID) -> None:
         await self.get_lead(lead_id)
@@ -2318,6 +3032,29 @@ class PropertyDevService:
                     currency=data.currency,
                     contract_signed_at=data.signing_date,
                 )
+            # Auto-create the primary ContractParty so the SPA can move
+            # straight into the "send for signature" step. Without this
+            # the user was stuck on a draft SPA that the FSM rejected with
+            # "SalesContract has no primary party — cannot send" and had
+            # no UI affordance to add a party (root cause of "Sales
+            # Contracts не работает": the only convert-from-reservation
+            # path produced a dead-end SPA).
+            try:
+                await self.contract_parties.create(
+                    ContractParty(
+                        sales_contract_id=spa.id,
+                        buyer_id=res_buyer_id_snap,
+                        ownership_pct=Decimal("100"),
+                        party_role="primary",
+                        signing_order=0,
+                    )
+                )
+            except Exception:  # noqa: BLE001
+                # Auto-party creation must NEVER block SPA creation —
+                # if it fails (e.g. on a future race) the SPA still
+                # exists and the user can add the party manually via
+                # the contract-parties endpoint.
+                pass
         if plot_status_before == "reserved":
             await self.plots.update_fields(plot_id_snap, status="sold")
 
@@ -2678,6 +3415,167 @@ class PropertyDevService:
         )
 
     # ── PaymentSchedule ────────────────────────────────────────────────
+
+    async def generate_payment_schedule_from_template(
+        self,
+        contract_id: uuid.UUID,
+        *,
+        template_key: str,
+        start_date: str | None = None,
+        late_fee_pct: Any = None,
+        grace_period_days: Any = None,
+    ) -> PaymentSchedule:
+        """Create (or rebuild) a payment schedule from a milestone template.
+
+        Used by the "Generate Schedule" CTA on the SPA detail tab. If a
+        schedule already exists for this SPA and is in ``active`` or
+        ``completed`` state, the request fails 409 to avoid clobbering
+        paid lines. A ``suspended``/``cancelled`` schedule is rebuilt in
+        place (its instalments are removed and re-created).
+        """
+        if template_key not in PAYMENT_SCHEDULE_TEMPLATES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Unknown template_key '{template_key}'. Known: "
+                    f"{sorted(PAYMENT_SCHEDULE_TEMPLATES.keys())}"
+                ),
+            )
+        spa = await self.get_spa(contract_id)
+        existing = await self.payment_schedules.get_for_contract(spa.id)
+        if existing is not None and existing.status in {"active", "completed"}:
+            # The convert-reservation-to-spa flow always creates a default
+            # ``active`` 1-line schedule (so finance has *something* to
+            # post against immediately). Allow a from-template rebuild
+            # over that default IFF nothing has been paid yet — otherwise
+            # the user is stuck (UX dead-end the user reported as
+            # "Payment Schedules не работает"). The strict 409 still
+            # applies to schedules with any paid/waived/cancelled rows.
+            existing_md = dict(existing.metadata_ or {})
+            ins_rows = await self.instalments.list_for_schedule(existing.id)
+            has_real_activity = any(
+                r.status in {"paid", "waived", "overdue", "due"}
+                or (r.amount_paid and Decimal(str(r.amount_paid)) > 0)
+                for r in ins_rows
+            )
+            if not (existing_md.get("auto_created") and not has_real_activity):
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        f"PaymentSchedule in status '{existing.status}' is "
+                        "live with paid instalments — suspend it first or "
+                        "create a new SPA revision."
+                    ),
+                )
+
+        tmpl = PAYMENT_SCHEDULE_TEMPLATES[template_key]
+        total_value = Decimal(str(spa.total_value or 0))
+        # Compute per-line amounts. Last line absorbs rounding so the
+        # sum is identical to ``total_value`` to the cent.
+        per_line: list[Decimal] = []
+        running = Decimal("0")
+        for i, m in enumerate(tmpl["milestones"]):
+            pct: Decimal = m["pct"]
+            if i == len(tmpl["milestones"]) - 1:
+                amt = (total_value - running).quantize(Decimal("0.01"))
+            else:
+                amt = (total_value * pct / Decimal("100")).quantize(
+                    Decimal("0.01")
+                )
+                running += amt
+            per_line.append(amt)
+
+        # Resolve start anchor: explicit start_date > spa.signing_date > today.
+        if start_date is None:
+            start_anchor = spa.signing_date or datetime.now(UTC).date().isoformat()
+        else:
+            start_anchor = start_date
+
+        lfp = (
+            Decimal(str(late_fee_pct))
+            if late_fee_pct is not None
+            else Decimal("0")
+        )
+        gpd = int(grace_period_days) if grace_period_days is not None else 0
+
+        # Replace-in-place when a non-live schedule exists; else create.
+        if existing is None:
+            schedule_obj = PaymentSchedule(
+                sales_contract_id=spa.id,
+                tenant_id=spa.tenant_id,
+                currency=spa.currency,
+                total_amount=total_value,
+                late_fee_pct=lfp,
+                grace_period_days=gpd,
+                status="active",
+                metadata_={
+                    "auto_created": True,
+                    "template_key": template_key,
+                    "start_date": start_anchor,
+                },
+            )
+            schedule = await self.payment_schedules.create(schedule_obj)
+        else:
+            # Snapshot every attribute the rest of this block touches BEFORE
+            # any mutation — once update_fields() expires the row, lazy
+            # column reloads under aiosqlite trip MissingGreenlet (same
+            # pattern as convert_reservation_to_spa above).
+            existing_id = existing.id
+            existing_md = dict(existing.metadata_ or {})
+            # Drop every existing instalment row first.
+            rows = await self.instalments.list_for_schedule(existing_id)
+            for r in rows:
+                await self.instalments.delete(r.id)
+            existing_md.update(
+                {
+                    "auto_created": True,
+                    "template_key": template_key,
+                    "start_date": start_anchor,
+                }
+            )
+            await self.payment_schedules.update_fields(
+                existing_id,
+                status="active",
+                total_amount=total_value,
+                currency=spa.currency,
+                late_fee_pct=lfp,
+                grace_period_days=gpd,
+                metadata_=existing_md,
+            )
+            schedule = await self.get_payment_schedule(existing_id)
+
+        for m, amt in zip(tmpl["milestones"], per_line):
+            due_iso: str | None = None
+            try:
+                due_iso = _add_days_iso(start_anchor, int(m["offset_days"]))
+            except (TypeError, ValueError):
+                due_iso = None
+            await self.instalments.create(
+                Instalment(
+                    schedule_id=schedule.id,
+                    sequence=int(m["sequence"]),
+                    milestone_label=str(m["label"]),
+                    milestone_event=str(m["milestone_event"]),
+                    due_date=due_iso,
+                    amount=amt,
+                    status="pending",
+                )
+            )
+
+        # Mark the first pending instalment due so it shows on the
+        # cashflow widgets immediately.
+        await self._mark_first_pending_due(schedule.id)
+        event_bus.publish_detached(
+            "property_dev.payment_schedule.generated",
+            data={
+                "schedule_id": str(schedule.id),
+                "sales_contract_id": str(spa.id),
+                "template_key": template_key,
+                "milestone_count": len(tmpl["milestones"]),
+            },
+            source_module="property_dev",
+        )
+        return schedule
 
     async def create_payment_schedule(
         self, data: PaymentScheduleCreate

@@ -51,6 +51,10 @@ import {
   Search,
   Pin,
   PinOff,
+  Eye,
+  EyeOff,
+  Pencil,
+  Check,
   Github,
   HardDrive,
   Link2,
@@ -221,10 +225,12 @@ const navGroups: NavGroup[] = [
   },
   // ── COMMERCIAL ─────────────────────────────────────────────────────
   // Commercial pipeline — CRM lead → contract award → variations,
-  // subcontractor management, bid management, supplier catalogs,
-  // property/asset development. Moved up to sit next to Estimating
-  // because it's the same "before-construction" phase: sales, bidding,
-  // commit.
+  // subcontractor management, bid management, supplier catalogs.
+  // Moved up to sit next to Estimating because it's the same
+  // "before-construction" phase: sales, bidding, commit. Property
+  // Development used to live here too but it's a discipline of its
+  // own (B2C real-estate sales, plots, handovers, warranties) and
+  // now has its own sibling group below.
   {
     id: 'commercial',
     labelKey: 'nav.group_commercial',
@@ -238,7 +244,41 @@ const navGroups: NavGroup[] = [
       { labelKey: 'nav.bid_management', to: '/bid-management', icon: Scale },
       { labelKey: 'nav.variations', to: '/variations', icon: GitBranch },
       { labelKey: 'nav.supplier_catalogs', to: '/supplier-catalogs', icon: ShoppingCart },
+    ],
+  },
+  // ── PROPERTY / REAL ESTATE DEVELOPMENT ─────────────────────────────
+  // Dedicated home for real-estate developer workflows: plots, buyers,
+  // leads, reservations, sales contracts, payment schedules, brokers,
+  // price matrix, escrow, handovers, warranties. Most of those live
+  // as tabs inside /property-dev; the sidebar only surfaces the main
+  // entry plus the two long-lived settings catalogues (house types
+  // and document templates). Sits right after Commercial because it
+  // shares the "before-construction" sales/commit phase but warrants
+  // its own collapsible header so developer-shaped tenants can pin
+  // just this section and skip the rest.
+  {
+    id: 'property',
+    labelKey: 'nav.group_property',
+    descriptionKey: 'nav.group_property_desc',
+    defaultOpen: false,
+    hideInSimple: true,
+    items: [
       { labelKey: 'nav.property_dev', to: '/property-dev', icon: Building2 },
+      {
+        labelKey: 'nav.property_dev_house_types',
+        to: '/property-dev/settings/house-types',
+        icon: Building2,
+        advancedOnly: true,
+      },
+      // Validation Rules used to sit here but it's a platform-wide
+      // catalogue (BOQ / CAD / tender / takeoff), not PropDev-specific.
+      // It now lives in the admin grid at /admin/validation-rules.
+      {
+        labelKey: 'nav.property_dev_doc_templates',
+        to: '/property-dev/settings/document-templates',
+        icon: Building2,
+        advancedOnly: true,
+      },
     ],
   },
   // ── PLANNING & CONTROL (advanced) ──────────────────────────────────
@@ -412,6 +452,11 @@ const adminGridItems: NavItem[] = [
     icon: ShieldCheck,
     roleGate: ['admin', 'manager'],
   },
+  {
+    labelKey: 'sidebar.admin_grid.validation_rules',
+    to: '/admin/validation-rules',
+    icon: ShieldCheck,
+  },
   { labelKey: 'sidebar.admin_grid.modules', to: '/modules', icon: Package },
   { labelKey: 'sidebar.admin_grid.settings', to: '/settings', icon: Settings },
   { labelKey: 'sidebar.admin_grid.about', to: '/about', icon: Info },
@@ -431,6 +476,11 @@ const ALL_NAV_ITEMS: Record<string, NavItem> = (() => {
 // localStorage key for collapsed state
 const COLLAPSED_KEY = 'oe_sidebar_collapsed';
 const PINNED_KEY = 'oe_sidebar_pinned';
+// Per-user menu-editor key: array of NavItem `to` strings that the user
+// has chosen to hide from the sidebar. Read at mount, written only on
+// "Save" inside edit mode. Cancel reverts the in-memory working set
+// back to whatever was persisted.
+const HIDDEN_MODULES_KEY = 'oe.sidebar_hidden_modules';
 
 function readCollapsedState(): Record<string, boolean> {
   try {
@@ -470,6 +520,39 @@ function writePinned(arr: string[]) {
     /* ignore */
   }
 }
+
+function readHiddenModules(): string[] {
+  try {
+    const raw = localStorage.getItem(HIDDEN_MODULES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((p) => typeof p === 'string');
+    }
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+function writeHiddenModules(arr: string[]) {
+  try {
+    localStorage.setItem(HIDDEN_MODULES_KEY, JSON.stringify(arr));
+  } catch {
+    /* ignore */
+  }
+}
+
+// Stable data-testid map for the ProductTour spotlight. Tests + the
+// onboarding walk-through query the sidebar by these attributes
+// rather than by label, so they survive i18n changes. Only routes the
+// tour actually targets need an entry here; everything else falls
+// through to the default `data-tour` attribute (if any).
+const PRODUCT_TOUR_NAV_TESTIDS: Record<string, string> = {
+  '/boq': 'sidebar-nav-boq',
+  '/bim': 'sidebar-nav-bim',
+  '/property-dev': 'sidebar-nav-property-dev',
+  '/geo': 'sidebar-nav-geo-hub',
+};
 
 // Two-key keyboard shortcuts for the most-trafficked routes. The
 // sequence is `G` then a single letter — same convention Linear and
@@ -608,6 +691,47 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   // pin/unpin via the small icon-button that appears on item hover.
   const [pinned, setPinned] = useState<string[]>(() => readPinned());
 
+  // ── Menu editor state ───────────────────────────────────────────────
+  // `hiddenModules` is the *persisted* set — drives which rows are
+  // filtered out of the rendered nav in normal mode.
+  // `editMode` is the transient "Edit menu" toggle.
+  // `editingHidden` is the in-memory working copy users edit while in
+  // edit mode; only committed to `hiddenModules` + localStorage on Save.
+  const [hiddenModules, setHiddenModules] = useState<string[]>(() =>
+    readHiddenModules(),
+  );
+  const [editMode, setEditMode] = useState(false);
+  const [editingHidden, setEditingHidden] = useState<string[]>([]);
+
+  const enterEditMode = useCallback(() => {
+    setEditingHidden(hiddenModules);
+    setEditMode(true);
+  }, [hiddenModules]);
+
+  const cancelEditMode = useCallback(() => {
+    setEditMode(false);
+    setEditingHidden([]);
+  }, []);
+
+  const saveEditMode = useCallback(() => {
+    setHiddenModules(editingHidden);
+    writeHiddenModules(editingHidden);
+    setEditMode(false);
+    setEditingHidden([]);
+  }, [editingHidden]);
+
+  const toggleItemHidden = useCallback((route: string) => {
+    setEditingHidden((prev) =>
+      prev.includes(route) ? prev.filter((r) => r !== route) : [...prev, route],
+    );
+  }, []);
+
+  // Set used by the render loop to decide whether to hide a row. In edit
+  // mode the user sees EVERYTHING (so they can re-enable items) — only
+  // normal mode actually filters. The visual "muted" state is driven by
+  // `editingHidden` so re-enabled rows visually un-mute immediately.
+  const effectiveHidden = editMode ? [] : hiddenModules;
+
   // Custom-module request dialog — opens from the "Request a custom
   // module" CTA at the bottom of the nav (below the "+ Add module"
   // developer-guide tile). The dialog itself handles community vs
@@ -700,10 +824,13 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
   // Resolve pinned route strings into full NavItems (skipping any
   // routes that are no longer in the registry — e.g. a module the user
-  // pinned earlier has been disabled).
+  // pinned earlier has been disabled, or hidden via the menu editor).
+  // In edit mode we show the full pinned list so users can also see
+  // them; in normal mode we drop hidden routes.
   const pinnedItems: NavItem[] = pinned
     .map((route) => ALL_NAV_ITEMS[route])
-    .filter((item): item is NavItem => Boolean(item));
+    .filter((item): item is NavItem => Boolean(item))
+    .filter((item) => editMode || !hiddenModules.includes(item.to));
 
   // Pick a single winning route for highlighting. Without this, both
   // `/bim` (parent) and `/bim/rules` (child) would render as "active"
@@ -731,6 +858,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <aside
       data-tour="sidebar"
+      data-testid="app-sidebar"
       className="oe-sidebar relative flex h-full w-sidebar flex-col bg-surface-primary"
       style={{
         // Right-edge depth — 1px hairline + a soft 12px fade. Replaces
@@ -936,6 +1064,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                     onTogglePin={togglePin}
                     activeRoute={activeRoute}
                     iconified={iconified}
+                    editMode={editMode}
+                    isItemHidden={editingHidden.includes(item.to)}
+                    onToggleHidden={toggleItemHidden}
                   />
                 </li>
               ))}
@@ -975,10 +1106,18 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           const visibleItems = allItems.filter(
             (item) =>
               (!item.moduleKey || isModuleEnabled(item.moduleKey)) &&
-              (!item.advancedOnly || isAdvanced),
+              (!item.advancedOnly || isAdvanced) &&
+              // Menu-editor filter — in normal mode, drop user-hidden
+              // rows; in edit mode `effectiveHidden` is empty so every
+              // row renders (muted via the editingHidden state below).
+              !effectiveHidden.includes(item.to),
           );
 
-          // Skip group if no visible items
+          // Skip group if no visible items. In normal mode this means
+          // "every item in this group is user-hidden or unavailable" —
+          // so the group header itself disappears (per spec). In edit
+          // mode `effectiveHidden` is empty, so users can always reach
+          // any group to re-enable rows inside it.
           if (visibleItems.length === 0) return null;
 
           const isCollapsed = collapsed[group.id] ?? false;
@@ -1037,6 +1176,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                         onTogglePin={togglePin}
                         activeRoute={activeRoute}
                         iconified={iconified}
+                        editMode={editMode}
+                        isItemHidden={editingHidden.includes(item.to)}
+                        onToggleHidden={toggleItemHidden}
                       />
                     </li>
                   );
@@ -1046,6 +1188,70 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             </Fragment>
           );
         })}
+        {/* Menu editor controls — sit just above the add-module tiles so
+             users see them after scanning their actual menu. Iconified
+             mode hides this row entirely (no room for text and the
+             editor is mouse-driven on the visible labels anyway). In
+             normal mode: a small "Edit menu" ghost button + a "{N}
+             hidden" badge when applicable. In edit mode the buttons
+             flip to Save / Cancel. */}
+        {!iconified && (
+          <li className="pt-3 pb-1 px-3">
+            {editMode ? (
+              <div className="flex items-center gap-1.5 w-full">
+                <button
+                  type="button"
+                  onClick={saveEditMode}
+                  className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-oe-blue/30 bg-oe-blue/10 px-2.5 py-2 text-xs font-medium text-oe-blue hover:bg-oe-blue/15 transition-colors"
+                >
+                  <Check size={12} strokeWidth={2.25} />
+                  <span>{t('sidebar.save', { defaultValue: 'Save' })}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEditMode}
+                  className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-border-light bg-surface-secondary/60 px-2.5 py-2 text-xs font-medium text-content-secondary hover:bg-surface-secondary hover:text-content-primary transition-colors"
+                >
+                  <X size={12} strokeWidth={2.25} />
+                  <span>{t('sidebar.cancel', { defaultValue: 'Cancel' })}</span>
+                </button>
+                {editingHidden.length > 0 && (
+                  <span className="shrink-0 text-2xs text-content-tertiary tabular-nums">
+                    {t('sidebar.hidden_count', {
+                      defaultValue: '{{count}} hidden',
+                      count: editingHidden.length,
+                    })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 w-full">
+                <button
+                  type="button"
+                  onClick={enterEditMode}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-light bg-surface-secondary/30 px-2.5 py-2 text-xs font-medium text-content-secondary hover:border-content-tertiary hover:bg-surface-secondary hover:text-content-primary transition-colors"
+                  title={t('sidebar.edit_menu_hint', {
+                    defaultValue: "Hide items you don't use",
+                  })}
+                >
+                  <Pencil size={12} strokeWidth={2} />
+                  <span>{t('sidebar.edit_menu', { defaultValue: 'Edit menu' })}</span>
+                </button>
+                {hiddenModules.length > 0 && (
+                  <span
+                    className="shrink-0 rounded-full bg-surface-tertiary/70 px-1.5 py-px text-[10px] font-medium text-content-tertiary tabular-nums"
+                    title={t('sidebar.show_hidden', { defaultValue: 'Show hidden' })}
+                  >
+                    {t('sidebar.hidden_count', {
+                      defaultValue: '{{count}} hidden',
+                      count: hiddenModules.length,
+                    })}
+                  </span>
+                )}
+              </div>
+            )}
+          </li>
+        )}
         {/* Add-a-module CTA — dashed-border tile with a plus icon. Sits at
              the very end of the main nav groups so it reads as "keep going,
              there's more — build your own". Navigates into the in-app
@@ -1328,6 +1534,9 @@ function SidebarItem({
   activeRoute,
   iconified,
   compact,
+  editMode,
+  isItemHidden,
+  onToggleHidden,
 }: {
   item: NavItem;
   label: string;
@@ -1339,15 +1548,31 @@ function SidebarItem({
   activeRoute?: string | null;
   iconified?: boolean;
   compact?: boolean;
+  /** When true, the row is in menu-editor mode and shows an Eye / EyeOff
+   *  toggle instead of the pin button. Hidden rows render dimmed so the
+   *  user can see at a glance what will be filtered out on Save. */
+  editMode?: boolean;
+  isItemHidden?: boolean;
+  onToggleHidden?: (route: string) => void;
 }) {
   const { t } = useTranslation();
   const Icon = item.icon;
   const kbdHint = KBD_HINTS[item.to];
+  const tourTestId = PRODUCT_TOUR_NAV_TESTIDS[item.to];
 
   const handlePinClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onTogglePin?.(item.to);
+  };
+
+  const handleHiddenClick = (e: React.MouseEvent) => {
+    // Eye-toggle inside the row must NEVER navigate — the row is still
+    // a NavLink so a bubbled click would otherwise route the user away
+    // from wherever they're currently editing the menu.
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleHidden?.(item.to);
   };
 
   // Single source of truth for active state — Sidebar picks one winning
@@ -1370,12 +1595,14 @@ function SidebarItem({
         title={label}
         aria-label={label}
         {...(item.tourId ? { 'data-tour': item.tourId } : {})}
+        {...(tourTestId ? { 'data-testid': tourTestId } : {})}
         className={() =>
           clsx(
             'relative mx-auto flex h-9 w-9 items-center justify-center rounded-md transition-colors duration-fast ease-oe',
             isActive
               ? 'bg-oe-blue/[0.14] text-oe-blue shadow-[inset_0_0_0_1px_rgba(0,122,255,0.18)] dark:bg-oe-blue/25'
               : 'text-content-secondary hover:bg-surface-secondary hover:text-content-primary',
+            editMode && isItemHidden && 'opacity-50',
           )
         }
       >
@@ -1397,9 +1624,22 @@ function SidebarItem({
       <NavLink
         to={item.to}
         end={item.to === '/' || hasQuery}
-        onClick={onClick}
+        onClick={(e) => {
+          // In edit mode the row is a "hide/show this item" target —
+          // navigating away while the user is curating the menu would
+          // be jarring and lose the unsaved working set. We swallow
+          // navigation here and let the trailing eye-toggle handle
+          // the actual state change instead.
+          if (editMode) {
+            e.preventDefault();
+            onToggleHidden?.(item.to);
+            return;
+          }
+          onClick?.();
+        }}
         title={label}
         {...(item.tourId ? { 'data-tour': item.tourId } : {})}
+        {...(tourTestId ? { 'data-testid': tourTestId } : {})}
         className={() => {
           const active = isActive;
           return clsx(
@@ -1418,6 +1658,7 @@ function SidebarItem({
               : active
                 ? 'font-semibold border-oe-blue bg-oe-blue/[0.14] text-oe-blue shadow-[inset_0_0_0_1px_rgba(0,122,255,0.06)] dark:bg-oe-blue/25'
                 : 'font-medium text-content-secondary hover:bg-surface-secondary hover:text-content-primary',
+            editMode && isItemHidden && 'opacity-50',
           );
         }}
       >
@@ -1497,28 +1738,61 @@ function SidebarItem({
             </span>
           )}
         </span>
-        {/* Pin / unpin button — only shown when the item supports it
-            (any item with an onTogglePin handler). Visible on hover or
-            persistently when pinned. Click does not navigate. */}
-        {onTogglePin && (
+        {/* Edit-mode wins over pin — when the user is curating the menu,
+            the trailing slot becomes a persistent Eye/EyeOff toggle so
+            they can hide/show every item in one click. Normal mode
+            falls back to the pin button. */}
+        {editMode && onToggleHidden ? (
           <button
             type="button"
-            onClick={handlePinClick}
-            data-pinned={isPinned ? 'true' : undefined}
+            onClick={handleHiddenClick}
+            data-pinned="true"
             aria-label={
-              isPinned
-                ? t('nav.unpin', { defaultValue: 'Unpin {{label}}', label })
-                : t('nav.pin', { defaultValue: 'Pin {{label}}', label })
+              isItemHidden
+                ? t('sidebar.show_item', { defaultValue: 'Show {{label}}', label })
+                : t('sidebar.hide_item', { defaultValue: 'Hide {{label}}', label })
             }
-            title={isPinned ? t('nav.unpin', { defaultValue: 'Unpin' }) : t('nav.pin', { defaultValue: 'Pin' })}
+            title={
+              isItemHidden
+                ? t('sidebar.show_item', { defaultValue: 'Show {{label}}', label })
+                : t('sidebar.hide_item', { defaultValue: 'Hide {{label}}', label })
+            }
             className={clsx(
               'oe-pin-btn ms-1 flex h-4 w-4 shrink-0 items-center justify-center rounded',
               'text-content-quaternary hover:text-oe-blue hover:bg-oe-blue/10',
-              isPinned && 'text-oe-blue',
+              isItemHidden && 'text-content-quaternary/70',
             )}
           >
-            {isPinned ? <PinOff size={10} strokeWidth={2} /> : <Pin size={10} strokeWidth={2} />}
+            {isItemHidden ? (
+              <EyeOff size={10} strokeWidth={2} />
+            ) : (
+              <Eye size={10} strokeWidth={2} />
+            )}
           </button>
+        ) : (
+          /* Pin / unpin button — only shown when the item supports it
+             (any item with an onTogglePin handler). Visible on hover or
+             persistently when pinned. Click does not navigate. */
+          onTogglePin && (
+            <button
+              type="button"
+              onClick={handlePinClick}
+              data-pinned={isPinned ? 'true' : undefined}
+              aria-label={
+                isPinned
+                  ? t('nav.unpin', { defaultValue: 'Unpin {{label}}', label })
+                  : t('nav.pin', { defaultValue: 'Pin {{label}}', label })
+              }
+              title={isPinned ? t('nav.unpin', { defaultValue: 'Unpin' }) : t('nav.pin', { defaultValue: 'Pin' })}
+              className={clsx(
+                'oe-pin-btn ms-1 flex h-4 w-4 shrink-0 items-center justify-center rounded',
+                'text-content-quaternary hover:text-oe-blue hover:bg-oe-blue/10',
+                isPinned && 'text-oe-blue',
+              )}
+            >
+              {isPinned ? <PinOff size={10} strokeWidth={2} /> : <Pin size={10} strokeWidth={2} />}
+            </button>
+          )
         )}
       </NavLink>
   );

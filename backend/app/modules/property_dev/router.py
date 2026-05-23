@@ -94,6 +94,9 @@ from app.modules.property_dev.schemas import (
     HouseTypeVariantCreate,
     HouseTypeVariantResponse,
     HouseTypeVariantUpdate,
+    PropertyDevHouseTypeCreate,
+    PropertyDevHouseTypeResponse,
+    PropertyDevHouseTypeUpdate,
     InstalmentCreate,
     InstalmentMarkPaidRequest,
     InstalmentResponse,
@@ -136,6 +139,7 @@ from app.modules.property_dev.schemas import (
     SnagResponse,
     SnagUpdate,
     TaxQuotePayload,
+    WarrantyClaimAssignRequest,
     WarrantyClaimCreate,
     WarrantyClaimResponse,
     WarrantyClaimUpdate,
@@ -498,6 +502,90 @@ async def delete_house_type(
     await service.delete_house_type(ht_id)
 
 
+# ── House Type Catalogue (preset + user-created) ────────────────────────
+
+
+@router.get(
+    "/house-type-catalogue/",
+    response_model=list[PropertyDevHouseTypeResponse],
+)
+async def list_house_type_catalogue(
+    payload: CurrentUserPayload,
+    country_code: str | None = Query(default=None, max_length=2),
+    project_id: uuid.UUID | None = Query(default=None),
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> list[PropertyDevHouseTypeResponse]:
+    """List preset + (when project_id supplied) tenant-created house types.
+
+    Presets (project_id IS NULL, is_preset=True) are always visible.
+    Tenant-created entries are only included when the caller owns the
+    project — admins see everything.
+    """
+    rows = await service.list_house_type_catalogue(
+        country_code=country_code,
+        project_id=project_id,
+        user_payload=payload,
+    )
+    return [PropertyDevHouseTypeResponse.model_validate(r) for r in rows]
+
+
+@router.post(
+    "/house-type-catalogue/",
+    response_model=PropertyDevHouseTypeResponse,
+    status_code=201,
+)
+async def create_house_type_catalogue_entry(
+    data: PropertyDevHouseTypeCreate,
+    payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.create")),
+) -> PropertyDevHouseTypeResponse:
+    obj = await service.create_house_type_catalogue_entry(data, user_payload=payload)
+    return PropertyDevHouseTypeResponse.model_validate(obj)
+
+
+@router.get(
+    "/house-type-catalogue/{entry_id}",
+    response_model=PropertyDevHouseTypeResponse,
+)
+async def get_house_type_catalogue_entry(
+    entry_id: uuid.UUID,
+    payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> PropertyDevHouseTypeResponse:
+    obj = await service.get_house_type_catalogue_entry(entry_id, user_payload=payload)
+    return PropertyDevHouseTypeResponse.model_validate(obj)
+
+
+@router.patch(
+    "/house-type-catalogue/{entry_id}",
+    response_model=PropertyDevHouseTypeResponse,
+)
+async def update_house_type_catalogue_entry(
+    entry_id: uuid.UUID,
+    data: PropertyDevHouseTypeUpdate,
+    payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.update")),
+) -> PropertyDevHouseTypeResponse:
+    obj = await service.update_house_type_catalogue_entry(
+        entry_id, data, user_payload=payload
+    )
+    return PropertyDevHouseTypeResponse.model_validate(obj)
+
+
+@router.delete("/house-type-catalogue/{entry_id}", status_code=204)
+async def delete_house_type_catalogue_entry(
+    entry_id: uuid.UUID,
+    payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.delete")),
+) -> None:
+    await service.delete_house_type_catalogue_entry(entry_id, user_payload=payload)
+
+
 @router.get(
     "/house-type-variants/", response_model=list[HouseTypeVariantResponse],
 )
@@ -691,10 +779,27 @@ async def list_buyers(
 @router.post("/buyers/", response_model=BuyerResponse, status_code=201)
 async def create_buyer(
     data: BuyerCreate,
+    payload: CurrentUserPayload,
     service: PropertyDevService = Depends(_svc),
+    sync_to_contacts: bool = Query(
+        default=True,
+        description=(
+            "When true (default), the buyer is mirrored to the Contacts "
+            "directory and the contact picks up the 'property_dev_buyer' "
+            "module tag. Pass false to skip the sync (e.g. for portal-"
+            "driven anonymous signups)."
+        ),
+    ),
     _perm: None = Depends(RequirePermission("property_dev.create")),
 ) -> BuyerResponse:
-    return BuyerResponse.model_validate(await service.create_buyer(data))
+    caller = payload.get("sub") if isinstance(payload, dict) else None
+    return BuyerResponse.model_validate(
+        await service.create_buyer(
+            data,
+            sync_to_contacts=sync_to_contacts,
+            tenant_id=str(caller) if caller else None,
+        )
+    )
 
 
 @router.get("/buyers/{b_id}", response_model=BuyerResponse)
@@ -875,10 +980,14 @@ async def selection_submit_for_production(
 
 @router.get("/handovers/", response_model=list[HandoverResponse])
 async def list_handovers(
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
     plot_id: uuid.UUID = Query(...),
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.read")),
 ) -> list[HandoverResponse]:
+    # IDOR closure: tenant must own the plot before seeing its handovers.
+    await _verify_owner_via_plot(session, plot_id, user_payload)
     rows = await service.handovers.list_for_plot(plot_id)
     return [HandoverResponse.model_validate(r) for r in rows]
 
@@ -886,18 +995,25 @@ async def list_handovers(
 @router.post("/handovers/", response_model=HandoverResponse, status_code=201)
 async def create_handover(
     data: HandoverCreate,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.handover")),
 ) -> HandoverResponse:
+    # IDOR closure: must own the plot before scheduling a handover against it.
+    await _verify_owner_via_plot(session, data.plot_id, user_payload)
     return HandoverResponse.model_validate(await service.create_handover(data))
 
 
 @router.get("/handovers/{h_id}", response_model=HandoverResponse)
 async def get_handover(
     h_id: uuid.UUID,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.read")),
 ) -> HandoverResponse:
+    await _verify_owner_via_handover(session, h_id, user_payload)
     return HandoverResponse.model_validate(await service.get_handover(h_id))
 
 
@@ -905,9 +1021,12 @@ async def get_handover(
 async def update_handover(
     h_id: uuid.UUID,
     data: HandoverUpdate,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.handover")),
 ) -> HandoverResponse:
+    await _verify_owner_via_handover(session, h_id, user_payload)
     return HandoverResponse.model_validate(
         await service.update_handover(h_id, data)
     )
@@ -916,9 +1035,12 @@ async def update_handover(
 @router.delete("/handovers/{h_id}", status_code=204)
 async def delete_handover(
     h_id: uuid.UUID,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.delete")),
 ) -> None:
+    await _verify_owner_via_handover(session, h_id, user_payload)
     await service.delete_handover(h_id)
 
 
@@ -926,9 +1048,12 @@ async def delete_handover(
 async def complete_handover(
     h_id: uuid.UUID,
     data: HandoverCompleteRequest,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.handover")),
 ) -> HandoverResponse:
+    await _verify_owner_via_handover(session, h_id, user_payload)
     return HandoverResponse.model_validate(
         await service.complete_handover(h_id, data)
     )
@@ -1106,19 +1231,57 @@ async def list_warranty_claims(
     user_payload: CurrentUserPayload,
     buyer_id: uuid.UUID | None = Query(default=None),
     plot_id: uuid.UUID | None = Query(default=None),
+    development_id: uuid.UUID | None = Query(default=None),
+    project_id: uuid.UUID | None = Query(default=None),
     status: str | None = Query(default=None),
+    category: str | None = Query(default=None),
+    severity: str | None = Query(default=None),
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.read")),
 ) -> list[WarrantyClaimResponse]:
+    """List warranty claims.
+
+    Supports four scoping modes (mutually exclusive — buyer wins, then
+    plot, then development, then project). When NONE are supplied the
+    endpoint returns the empty list to avoid an accidental cross-tenant
+    enumeration (matches the v3110 ``list_warranty_claims`` behavior).
+    """
     if buyer_id is not None:
         await _verify_owner_via_buyer(session, buyer_id, user_payload)
         rows = await service.warranty.list_for_buyer(buyer_id, status=status)
     elif plot_id is not None:
         await _verify_owner_via_plot(session, plot_id, user_payload)
         rows = await service.warranty.list_for_plot(plot_id, status=status)
+    elif development_id is not None:
+        await _verify_owner_via_development(
+            session, development_id, user_payload
+        )
+        rows = await service.warranty.list_for_development(
+            development_id,
+            status=status,
+            category=category,
+            severity=severity,
+        )
+    elif project_id is not None:
+        # Project-level listing — IDOR-gated via the project ownership
+        # check that already powers ``_verify_owner_via_plot``.
+        from app.modules.projects.repository import ProjectRepository
+
+        proj = await ProjectRepository(session).get_by_id(project_id)
+        if proj is None:
+            raise HTTPException(status_code=404, detail="Resource not found")
+        owner_id = uuid.UUID(str(user_payload["sub"]))
+        if proj.owner_id != owner_id:
+            raise HTTPException(status_code=404, detail="Resource not found")
+        rows = await service.warranty.list_for_project(
+            project_id, status=status
+        )
     else:
         rows = []
-    return [WarrantyClaimResponse.model_validate(r) for r in rows]
+    return [
+        await service.warranty_response(r)
+        for r in rows
+    ]
 
 
 @router.post(
@@ -1133,7 +1296,7 @@ async def create_warranty_claim(
 ) -> WarrantyClaimResponse:
     await _verify_owner_via_plot(session, data.plot_id, user_payload)
     await _verify_owner_via_buyer(session, data.buyer_id, user_payload)
-    return WarrantyClaimResponse.model_validate(
+    return await service.warranty_response(
         await service.raise_warranty_claim(data.plot_id, data.buyer_id, data)
     )
 
@@ -1149,7 +1312,7 @@ async def get_warranty_claim(
     _perm: None = Depends(RequirePermission("property_dev.read")),
 ) -> WarrantyClaimResponse:
     await _verify_owner_via_warranty(session, w_id, user_payload)
-    return WarrantyClaimResponse.model_validate(await service.get_warranty(w_id))
+    return await service.warranty_response(await service.get_warranty(w_id))
 
 
 @router.patch(
@@ -1164,7 +1327,7 @@ async def update_warranty_claim(
     _perm: None = Depends(RequirePermission("property_dev.process_warranty")),
 ) -> WarrantyClaimResponse:
     await _verify_owner_via_warranty(session, w_id, user_payload)
-    return WarrantyClaimResponse.model_validate(
+    return await service.warranty_response(
         await service.update_warranty(w_id, data)
     )
 
@@ -1182,6 +1345,25 @@ async def delete_warranty_claim(
 
 
 @router.post(
+    "/warranty-claims/{w_id}/assign",
+    response_model=WarrantyClaimResponse,
+)
+async def assign_warranty_claim(
+    w_id: uuid.UUID,
+    data: WarrantyClaimAssignRequest,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.process_warranty")),
+) -> WarrantyClaimResponse:
+    """Assign (or unassign with ``null``) a contractor / PM owner."""
+    await _verify_owner_via_warranty(session, w_id, user_payload)
+    return await service.warranty_response(
+        await service.assign_warranty(w_id, data.assigned_to_user_id)
+    )
+
+
+@router.post(
     "/warranty/{w_id}/accept", response_model=WarrantyClaimResponse,
 )
 async def accept_warranty_claim(
@@ -1192,7 +1374,7 @@ async def accept_warranty_claim(
     _perm: None = Depends(RequirePermission("property_dev.process_warranty")),
 ) -> WarrantyClaimResponse:
     await _verify_owner_via_warranty(session, w_id, user_payload)
-    return WarrantyClaimResponse.model_validate(await service.warranty_accept(w_id))
+    return await service.warranty_response(await service.warranty_accept(w_id))
 
 
 @router.post(
@@ -1206,7 +1388,7 @@ async def reject_warranty_claim(
     _perm: None = Depends(RequirePermission("property_dev.process_warranty")),
 ) -> WarrantyClaimResponse:
     await _verify_owner_via_warranty(session, w_id, user_payload)
-    return WarrantyClaimResponse.model_validate(await service.warranty_reject(w_id))
+    return await service.warranty_response(await service.warranty_reject(w_id))
 
 
 @router.post(
@@ -1220,7 +1402,158 @@ async def close_warranty_claim(
     _perm: None = Depends(RequirePermission("property_dev.process_warranty")),
 ) -> WarrantyClaimResponse:
     await _verify_owner_via_warranty(session, w_id, user_payload)
-    return WarrantyClaimResponse.model_validate(await service.warranty_close(w_id))
+    return await service.warranty_response(await service.warranty_close(w_id))
+
+
+@router.get("/warranty-claims/{w_id}/pdf")
+async def warranty_claim_pdf(
+    w_id: uuid.UUID,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+):
+    """Generate a printable PDF for a warranty claim (legal / insurance).
+
+    Falls back to a plain-text response when the reportlab PDF stack is
+    unavailable so the endpoint never 500s the page; mirrors the
+    document_templates fallback path.
+    """
+    from fastapi.responses import Response
+
+    await _verify_owner_via_warranty(session, w_id, user_payload)
+    claim = await service.get_warranty(w_id)
+    payload = await service.warranty_response(claim)
+
+    lines = [
+        "WARRANTY CLAIM",
+        "",
+        f"Claim ID:       {claim.id}",
+        f"Plot ID:        {claim.plot_id}",
+        f"Buyer ID:       {claim.buyer_id}",
+        f"Handover ID:    {claim.handover_id or '—'}",
+        f"Raised at:      {claim.raised_at or '—'}",
+        f"Category:       {claim.category}",
+        f"Severity:       {claim.severity}",
+        f"Status:         {claim.status}",
+        f"In warranty:    {'YES' if payload.is_in_warranty else 'NO'}",
+        f"SLA deadline:   {claim.sla_deadline or '—'}",
+        f"Assigned to:    {claim.assigned_to_user_id or '—'}",
+        "",
+        "Description:",
+        claim.description or "(none)",
+        "",
+        "Resolution notes:",
+        claim.resolution_notes or "(none)",
+    ]
+    body = "\n".join(lines)
+
+    try:
+        from io import BytesIO
+
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas as _canvas
+
+        buf = BytesIO()
+        c = _canvas.Canvas(buf, pagesize=A4)
+        c.setFont("Helvetica", 10)
+        y = 800
+        for ln in body.splitlines():
+            c.drawString(50, y, ln[:110])
+            y -= 14
+            if y < 50:
+                c.showPage()
+                c.setFont("Helvetica", 10)
+                y = 800
+        c.save()
+        pdf_bytes = buf.getvalue()
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="warranty-claim-{w_id}.pdf"'
+                ),
+            },
+        )
+    except Exception:
+        # reportlab missing or rendering failed — return the txt fallback
+        # so the legal/insurance team still gets something printable.
+        return Response(
+            content=body.encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="warranty-claim-{w_id}.txt"'
+                ),
+            },
+        )
+
+
+@router.post(
+    "/warranty-claims/from-snag/{snag_id}",
+    response_model=WarrantyClaimResponse,
+    status_code=201,
+)
+async def create_warranty_claim_from_snag(
+    snag_id: uuid.UUID,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.process_warranty")),
+) -> WarrantyClaimResponse:
+    """Promote a snag into a warranty claim (idempotent).
+
+    Useful when a defect identified during/after handover turns out to
+    be in-warranty and the buyer-facing process needs to escalate.
+    Idempotent: if a claim is already linked via ``source_snag_id``, it
+    is returned instead of creating a duplicate.
+    """
+    from app.modules.property_dev.schemas import WarrantyClaimCreate as _WCreate
+
+    await _verify_owner_via_snag(session, snag_id, user_payload)
+    snag = await service.get_snag(snag_id)
+
+    existing = await service.warranty.find_by_source_snag(snag_id)
+    if existing is not None:
+        return await service.warranty_response(existing)
+
+    # Resolve the buyer: prefer the buyer who raised the snag, else
+    # whichever buyer is attached to the plot via the handover chain.
+    buyer_id = snag.buyer_id
+    handover = await service.get_handover(snag.handover_id)
+    plot_id = handover.plot_id
+    if buyer_id is None:
+        # Best-effort: fall back to any buyer on the plot.
+        from sqlalchemy import select as _select
+
+        from app.modules.property_dev.models import Buyer as _Buyer
+
+        row = (
+            await session.execute(
+                _select(_Buyer).where(_Buyer.plot_id == plot_id).limit(1)
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot raise warranty claim: snag has no buyer link",
+            )
+        buyer_id = row.id
+
+    severity_map = {"minor": "minor", "major": "major", "critical": "critical"}
+    payload = _WCreate(
+        plot_id=plot_id,
+        buyer_id=buyer_id,
+        handover_id=snag.handover_id,
+        source_snag_id=snag.id,
+        category="defect",
+        severity=severity_map.get(snag.severity, "minor"),
+        description=snag.description or "(promoted from snag)",
+        photos=list(snag.photos or []),
+    )
+    claim = await service.raise_warranty_claim(plot_id, buyer_id, payload)
+    return await service.warranty_response(claim)
 
 
 # ── Cancel buyer + deposit forfeiture ──────────────────────────────────
@@ -1608,10 +1941,26 @@ async def list_leads(
 @router.post("/leads/", response_model=LeadResponse, status_code=201)
 async def create_lead(
     data: LeadCreate,
+    payload: CurrentUserPayload,
     service: PropertyDevService = Depends(_svc),
+    sync_to_contacts: bool = Query(
+        default=True,
+        description=(
+            "When true (default), the lead is mirrored to the Contacts "
+            "directory and the contact picks up the 'property_dev_lead' "
+            "module tag. Pass false to skip the sync."
+        ),
+    ),
     _perm: None = Depends(RequirePermission("property_dev.lead.create")),
 ) -> LeadResponse:
-    return LeadResponse.model_validate(await service.create_lead(data))
+    caller = payload.get("sub") if isinstance(payload, dict) else None
+    return LeadResponse.model_validate(
+        await service.create_lead(
+            data,
+            sync_to_contacts=sync_to_contacts,
+            tenant_id=str(caller) if caller else None,
+        )
+    )
 
 
 @router.get("/leads/{lead_id}", response_model=LeadResponse)
@@ -1669,6 +2018,88 @@ async def convert_lead_to_reservation(
     return ReservationResponse.model_validate(
         await service.convert_lead_to_reservation(lead_id, data)
     )
+
+
+@router.get(
+    "/leads/{lead_id}/contact",
+    summary="Get the Contacts directory entry linked to a Lead",
+    description=(
+        "Returns the canonical Contact row referenced by ``lead.contact_id`` "
+        "(or 404 if the lead is not linked / the linked contact was deleted). "
+        "Used by the Lead detail drawer to render the 'Linked Contact' card."
+    ),
+)
+async def get_lead_contact(
+    lead_id: uuid.UUID,
+    session: SessionDep,
+    payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.lead.read")),
+) -> dict[str, Any]:
+    """Resolve the contact for ``lead_id`` if linked."""
+    await _verify_owner_via_lead(session, lead_id, payload)
+    lead = await service.get_lead(lead_id)
+    if lead.contact_id is None:
+        raise HTTPException(status_code=404, detail="Lead is not linked to a contact")
+    from app.modules.contacts.models import Contact as _Contact
+
+    contact = await session.get(_Contact, lead.contact_id)
+    if contact is None:
+        raise HTTPException(
+            status_code=404, detail="Linked contact has been deleted"
+        )
+    return {
+        "id": str(contact.id),
+        "contact_type": contact.contact_type,
+        "first_name": contact.first_name,
+        "last_name": contact.last_name,
+        "company_name": contact.company_name,
+        "primary_email": contact.primary_email,
+        "primary_phone": contact.primary_phone,
+        "country_code": contact.country_code,
+        "module_tags": list(contact.module_tags or []),
+    }
+
+
+@router.get(
+    "/buyers/{b_id}/contact",
+    summary="Get the Contacts directory entry linked to a Buyer",
+    description=(
+        "Returns the canonical Contact row referenced by ``buyer.contact_id`` "
+        "(or 404 if the buyer is not linked / the linked contact was "
+        "deleted)."
+    ),
+)
+async def get_buyer_contact(
+    b_id: uuid.UUID,
+    session: SessionDep,
+    payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> dict[str, Any]:
+    """Resolve the contact for ``b_id`` if linked."""
+    await _verify_buyer_owner(session, b_id, payload)
+    buyer = await service.get_buyer(b_id)
+    if buyer.contact_id is None:
+        raise HTTPException(status_code=404, detail="Buyer is not linked to a contact")
+    from app.modules.contacts.models import Contact as _Contact
+
+    contact = await session.get(_Contact, buyer.contact_id)
+    if contact is None:
+        raise HTTPException(
+            status_code=404, detail="Linked contact has been deleted"
+        )
+    return {
+        "id": str(contact.id),
+        "contact_type": contact.contact_type,
+        "first_name": contact.first_name,
+        "last_name": contact.last_name,
+        "company_name": contact.company_name,
+        "primary_email": contact.primary_email,
+        "primary_phone": contact.primary_phone,
+        "country_code": contact.country_code,
+        "module_tags": list(contact.module_tags or []),
+    }
 
 
 # ── Reservations ────────────────────────────────────────────────────────
@@ -1814,13 +2245,40 @@ async def convert_reservation_to_spa(
 async def list_sales_contracts(
     session: SessionDep,
     payload: CurrentUserPayload,
-    plot_id: uuid.UUID = Query(...),
+    plot_id: uuid.UUID | None = Query(default=None),
+    development_id: uuid.UUID | None = Query(default=None),
+    reservation_id: uuid.UUID | None = Query(default=None),
     status: str | None = Query(default=None),
     service: PropertyDevService = Depends(_svc),
     _perm: None = Depends(RequirePermission("property_dev.read")),
 ) -> list[SalesContractResponse]:
-    await _verify_owner_via_plot(session, plot_id, payload)
-    rows = await service.sales_contracts.list_for_plot(plot_id, status=status)
+    """List SPAs by plot, development or reservation.
+
+    Exactly one of ``plot_id`` / ``development_id`` / ``reservation_id``
+    must be supplied. The top-level "Sales Contracts" tab uses
+    ``development_id``; per-plot drawers use ``plot_id``; the reservation
+    detail view uses ``reservation_id`` to surface a converted SPA.
+    """
+    if plot_id is not None:
+        await _verify_owner_via_plot(session, plot_id, payload)
+        rows = await service.sales_contracts.list_for_plot(
+            plot_id, status=status
+        )
+    elif development_id is not None:
+        await _verify_owner_via_development(session, development_id, payload)
+        rows = await service.sales_contracts.list_for_development(
+            development_id, status=status
+        )
+    elif reservation_id is not None:
+        await _verify_owner_via_reservation(session, reservation_id, payload)
+        rows = await service.sales_contracts.list_for_reservation(reservation_id)
+        if status is not None:
+            rows = [r for r in rows if r.status == status]
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="plot_id, development_id or reservation_id required",
+        )
     return [SalesContractResponse.model_validate(r) for r in rows]
 
 
@@ -2005,6 +2463,119 @@ async def quote_sales_contract_taxes(
 
 
 # ── PaymentSchedules ────────────────────────────────────────────────────
+
+
+@router.get(
+    "/payment-schedules/",
+    response_model=list[PaymentScheduleResponse],
+)
+async def list_payment_schedules(
+    session: SessionDep,
+    payload: CurrentUserPayload,
+    sales_contract_id: uuid.UUID | None = Query(default=None),
+    development_id: uuid.UUID | None = Query(default=None),
+    status: str | None = Query(default=None),
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> list[PaymentScheduleResponse]:
+    """List payment schedules by SPA or by development.
+
+    Backs the top-level "Payment Schedules" tab and the SPA detail panel
+    which both need to enumerate schedules without knowing each id.
+    """
+    if sales_contract_id is not None:
+        await _verify_owner_via_spa(session, sales_contract_id, payload)
+        existing = await service.payment_schedules.get_for_contract(
+            sales_contract_id
+        )
+        rows = [existing] if existing is not None else []
+    elif development_id is not None:
+        await _verify_owner_via_development(session, development_id, payload)
+        rows = await service.payment_schedules.list_for_development(
+            development_id, status=status
+        )
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="sales_contract_id or development_id required",
+        )
+    if status is not None and sales_contract_id is not None:
+        rows = [r for r in rows if r.status == status]
+    return [PaymentScheduleResponse.model_validate(r) for r in rows]
+
+
+@router.post(
+    "/payment-schedules/from-template",
+    response_model=PaymentScheduleResponse,
+    status_code=201,
+)
+async def generate_payment_schedule_from_template(
+    body: dict[str, Any],
+    session: SessionDep,
+    payload: CurrentUserPayload,
+    service: PropertyDevService = Depends(_svc),
+    _perm: None = Depends(
+        RequirePermission("property_dev.payment_schedule.activate")
+    ),
+) -> PaymentScheduleResponse:
+    """Generate a payment schedule from a milestone template.
+
+    Body schema (validated inline for flexibility):
+        sales_contract_id: UUID                — required.
+        template_key: str                      — one of the keys returned
+                                                 by GET /payment-schedule-templates/.
+                                                 Required.
+        start_date: "YYYY-MM-DD"               — optional, defaults to SPA
+                                                 signing date or today.
+        late_fee_pct: Decimal (0..100)         — optional, default 0.
+        grace_period_days: int                 — optional, default 0.
+
+    Behaviour: if a schedule already exists for this SPA and it is in
+    ``draft``/``suspended``/``cancelled`` state, its instalments are
+    cleared and replaced; if it is ``active``/``completed`` the call
+    fails with 409 to avoid clobbering paid lines.
+    """
+    raw_contract = body.get("sales_contract_id")
+    raw_template = body.get("template_key")
+    if not raw_contract or not raw_template:
+        raise HTTPException(
+            status_code=422,
+            detail="sales_contract_id and template_key are required",
+        )
+    try:
+        contract_id = uuid.UUID(str(raw_contract))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=422, detail="invalid sales_contract_id",
+        ) from exc
+    await _verify_owner_via_spa(session, contract_id, payload)
+
+    template_key = str(raw_template)
+    start_date = body.get("start_date")
+    if start_date is not None:
+        start_date = str(start_date)
+    late_fee_pct = body.get("late_fee_pct")
+    grace_period_days = body.get("grace_period_days")
+    schedule = await service.generate_payment_schedule_from_template(
+        contract_id,
+        template_key=template_key,
+        start_date=start_date,
+        late_fee_pct=late_fee_pct,
+        grace_period_days=grace_period_days,
+    )
+    return PaymentScheduleResponse.model_validate(schedule)
+
+
+@router.get("/payment-schedule-templates/", response_model=list[dict])
+async def list_payment_schedule_templates(
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> list[dict]:
+    """Static catalogue of milestone-based payment schedule templates.
+
+    Templates are pure data — see
+    :data:`PropertyDevService.PAYMENT_SCHEDULE_TEMPLATES`.
+    """
+    return PropertyDevService.payment_schedule_template_catalogue()
 
 
 @router.post(
@@ -3329,6 +3900,788 @@ async def preview_propdev_document(
             doc_type,
             contract_id or reservation_id or handover_id or instalment_id,
         ),
+    }
+
+
+# ── Document-templates settings catalogue ──────────────────────────────
+
+
+_DOC_TEMPLATE_CATALOGUE: list[dict[str, Any]] = [
+    {
+        "doc_type": "reservation_receipt",
+        "title": "Reservation Receipt",
+        "description": (
+            "Issued automatically when a buyer pays the reservation "
+            "deposit. Single A4 page, no watermark."
+        ),
+        "trigger": "POST /reservations/ → deposit recorded",
+        "entity": "reservation",
+        "pages": "1",
+    },
+    {
+        "doc_type": "sales_contract",
+        "title": "Sale-Purchase Agreement (SPA)",
+        "description": (
+            "Multi-page, multi-buyer aware contract. Auto-injects "
+            "jurisdiction clauses (RERA / MAHARERA / 214-FZ / CMA). "
+            "DRAFT watermark until status is signed/executed."
+        ),
+        "trigger": "POST /sales-contracts/ → status transitions",
+        "entity": "sales_contract",
+        "pages": "3+",
+    },
+    {
+        "doc_type": "payment_receipt",
+        "title": "Payment Receipt",
+        "description": (
+            "Issued per paid instalment. Shows outstanding balance and "
+            "milestone reference."
+        ),
+        "trigger": "POST /instalments/{id}/pay",
+        "entity": "instalment",
+        "pages": "1",
+    },
+    {
+        "doc_type": "handover_certificate",
+        "title": "Handover Certificate",
+        "description": (
+            "Signed at completion. Lists open snags + keys-handed-over "
+            "date so the buyer formally accepts the unit."
+        ),
+        "trigger": "POST /handovers/{id}/complete",
+        "entity": "handover",
+        "pages": "1",
+    },
+    {
+        "doc_type": "warranty_certificate",
+        "title": "Warranty Certificate",
+        "description": (
+            "Issued on handover. Default 10y structural + 1y finishing. "
+            "Lists exclusions and the claim procedure."
+        ),
+        "trigger": "GET /documents/warranty_certificate?handover_id=…",
+        "entity": "handover",
+        "pages": "1",
+    },
+    {
+        "doc_type": "noc",
+        "title": "No Objection Certificate",
+        "description": (
+            "Developer's permission for the buyer to resell. Validity "
+            "30 days by default."
+        ),
+        "trigger": "GET /documents/noc?contract_id=…",
+        "entity": "sales_contract",
+        "pages": "1",
+    },
+]
+
+
+_CUSTOM_TEMPLATES_DIR = Path("uploads/property_dev/custom_templates")
+_CUSTOM_TEMPLATE_MAX_MB = 10
+_CUSTOM_TEMPLATE_MAX_BYTES = _CUSTOM_TEMPLATE_MAX_MB * 1024 * 1024
+_ALLOWED_CUSTOM_TEMPLATE_EXTENSIONS: tuple[str, ...] = (
+    ".docx", ".html", ".htm", ".pdf", ".odt", ".md", ".txt",
+)
+_ALLOWED_CUSTOM_DOC_TYPES: tuple[str, ...] = (
+    "custom",
+    "reservation_receipt",
+    "sales_contract",
+    "payment_receipt",
+    "handover_certificate",
+    "warranty_certificate",
+    "noc",
+    "snag_report",
+    "invoice",
+    "payment_reminder",
+    "kyc_checklist",
+    "brokerage_commission",
+)
+_ALLOWED_CUSTOM_ENTITIES: tuple[str, ...] = (
+    "custom", "reservation", "sales_contract", "instalment", "handover",
+    "snag", "broker", "buyer", "plot", "development",
+)
+_CUSTOM_TEMPLATE_LOG = logging.getLogger(__name__ + ".custom_templates")
+
+
+# Documentation block for the "{i} Variables" modal in the settings
+# page. Kept in code (not a YAML file) because it mirrors the public
+# fields of the ORM models below — they move together at refactor time.
+_TEMPLATE_VARIABLES_DOCUMENTATION: list[dict[str, Any]] = [
+    {
+        "group": "development",
+        "label": "Development",
+        "vars": [
+            {"key": "{development.name}", "desc": "Development name"},
+            {"key": "{development.code}", "desc": "Short development code"},
+            {"key": "{development.country_code}", "desc": "ISO-3166 alpha-2"},
+            {"key": "{development.dev_type}", "desc": "residential, mixed_use, …"},
+            {"key": "{development.total_area_m2}", "desc": "Total m²"},
+            {"key": "{development.currency}", "desc": "ISO-4217 (e.g. EUR)"},
+            {"key": "{development.developer_name}", "desc": "Developer entity"},
+        ],
+    },
+    {
+        "group": "plot",
+        "label": "Plot",
+        "vars": [
+            {"key": "{plot.plot_number}", "desc": "Plot number / ID"},
+            {"key": "{plot.area_m2}", "desc": "Plot area in m²"},
+            {"key": "{plot.house_type_label}", "desc": "House-type display label"},
+            {"key": "{plot.phase_code}", "desc": "Phase code (metadata)"},
+            {"key": "{plot.block_code}", "desc": "Block code (metadata)"},
+            {"key": "{plot.currency}", "desc": "Plot's pricing currency"},
+        ],
+    },
+    {
+        "group": "buyer",
+        "label": "Buyer",
+        "vars": [
+            {"key": "{buyer.full_name}", "desc": "Full legal name"},
+            {"key": "{buyer.email}", "desc": "Primary contact email"},
+            {"key": "{buyer.party_role}", "desc": "primary / secondary"},
+            {"key": "{buyer.ownership_pct}", "desc": "Ownership percentage"},
+        ],
+    },
+    {
+        "group": "reservation",
+        "label": "Reservation",
+        "vars": [
+            {"key": "{reservation.reservation_number}", "desc": "RES-YYYY-NNNN"},
+            {"key": "{reservation.deposit_amount}", "desc": "Deposit paid"},
+            {"key": "{reservation.expires_at}", "desc": "Reservation expiry"},
+            {"key": "{reservation.cooling_off_until}", "desc": "Cooling-off date"},
+        ],
+    },
+    {
+        "group": "contract",
+        "label": "Sales Contract",
+        "vars": [
+            {"key": "{contract.contract_number}", "desc": "SPA-YYYY-NNNN"},
+            {"key": "{contract.total_value}", "desc": "Total contract value"},
+            {"key": "{contract.currency}", "desc": "Contract currency"},
+            {"key": "{contract.status}", "desc": "draft / signed / executed"},
+            {"key": "{contract.signing_date}", "desc": "ISO date"},
+            {"key": "{contract.place}", "desc": "Place of signing"},
+        ],
+    },
+    {
+        "group": "handover",
+        "label": "Handover",
+        "vars": [
+            {"key": "{handover.scheduled_at}", "desc": "Planned handover date"},
+            {"key": "{handover.completed_at}", "desc": "Actual handover date"},
+            {"key": "{handover.keys_handed_over_at}", "desc": "Keys-handed-over date"},
+            {"key": "{handover.snag_count}", "desc": "Open snags at handover"},
+        ],
+    },
+    {
+        "group": "instalment",
+        "label": "Instalment",
+        "vars": [
+            {"key": "{instalment.sequence}", "desc": "Sequence number"},
+            {"key": "{instalment.milestone_label}", "desc": "Milestone label"},
+            {"key": "{instalment.due_date}", "desc": "Due date (ISO)"},
+            {"key": "{instalment.amount}", "desc": "Instalment amount"},
+            {"key": "{instalment.amount_paid}", "desc": "Amount paid"},
+        ],
+    },
+]
+
+
+@router.get("/document-templates/")
+async def list_document_templates(
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
+    development_id: uuid.UUID | None = Query(default=None),
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> dict[str, Any]:
+    """List property-development document templates.
+
+    Returns the six built-in PDF generators shipped with the platform
+    plus any tenant-uploaded custom templates owned by the calling
+    user's projects. Also returns the supported locales / jurisdictions
+    and a documentation block describing the variables custom
+    templates may interpolate.
+
+    Built-in templates themselves are source-of-truth code in
+    ``document_templates.py``; this endpoint exposes their metadata so
+    the settings UI can render a real catalogue with previews instead
+    of an empty stub. Custom templates land in
+    ``oe_property_dev_custom_template`` with their files under
+    ``uploads/property_dev/custom_templates/``.
+    """
+    from sqlalchemy import select
+
+    from app.modules.property_dev.document_templates import (
+        SUPPORTED_LOCALES,
+        SUPPORTED_REGULATORS,
+    )
+    from app.modules.property_dev.models import PropertyDevCustomTemplate
+
+    # Resolve owning project IDs for the calling user. Admins see every
+    # uploaded template; everyone else sees only templates from projects
+    # they own. The query is bounded by RBAC + the explicit list of
+    # owned project IDs — no cross-tenant leakage.
+    is_admin = user_payload.get("role") == "admin"
+    user_id = user_payload.get("sub") or user_payload.get("user_id")
+
+    stmt = select(PropertyDevCustomTemplate).order_by(
+        PropertyDevCustomTemplate.created_at.desc()
+    )
+    if not is_admin and user_id is not None:
+        from app.modules.projects.models import Project
+
+        proj_stmt = select(Project.id).where(Project.owner_id == user_id)
+        owned_ids = (await session.execute(proj_stmt)).scalars().all()
+        if not owned_ids:
+            stmt = stmt.where(PropertyDevCustomTemplate.id == uuid.UUID(int=0))
+        else:
+            stmt = stmt.where(
+                PropertyDevCustomTemplate.project_id.in_(owned_ids)
+            )
+
+    if development_id is not None:
+        stmt = stmt.where(
+            (PropertyDevCustomTemplate.development_id == development_id)
+            | (PropertyDevCustomTemplate.development_id.is_(None))
+        )
+
+    rows = (await session.execute(stmt)).scalars().all()
+    custom_entries: list[dict[str, Any]] = []
+    for row in rows:
+        custom_entries.append({
+            "id": str(row.id),
+            "doc_type": row.doc_type,
+            "title": row.name,
+            "description": row.description or "",
+            "trigger": row.trigger,
+            "entity": row.entity,
+            "pages": "—",
+            "is_custom": True,
+            "filename": row.filename,
+            "content_type": row.content_type,
+            "size_bytes": row.size_bytes,
+            "development_id": (
+                str(row.development_id) if row.development_id else None
+            ),
+            "project_id": str(row.project_id) if row.project_id else None,
+            "created_at": row.created_at.isoformat()
+            if row.created_at else None,
+        })
+
+    builtin_entries = [
+        {**tpl, "is_custom": False} for tpl in _DOC_TEMPLATE_CATALOGUE
+    ]
+
+    return {
+        "templates": builtin_entries + custom_entries,
+        "locales": list(SUPPORTED_LOCALES),
+        "regulators": list(SUPPORTED_REGULATORS),
+        "variables": _TEMPLATE_VARIABLES_DOCUMENTATION,
+        "upload": {
+            "allowed_extensions": list(_ALLOWED_CUSTOM_TEMPLATE_EXTENSIONS),
+            "max_size_mb": _CUSTOM_TEMPLATE_MAX_MB,
+        },
+    }
+
+
+def _validate_custom_template_metadata(
+    name: str,
+    doc_type: str,
+    entity: str,
+    trigger: str,
+) -> tuple[str, str, str, str]:
+    """Validate + normalise the upload's text metadata.
+
+    Raises 422 on any field that's empty, too long, or carries
+    characters that wouldn't make sense as a doc_type / entity.
+    """
+    name = (name or "").strip()
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Template name is required",
+        )
+    if len(name) > 200:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Template name must be 200 characters or fewer",
+        )
+    doc_type = (doc_type or "custom").strip().lower()
+    if doc_type not in _ALLOWED_CUSTOM_DOC_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Unknown doc_type '{doc_type}'. Allowed: "
+                f"{', '.join(_ALLOWED_CUSTOM_DOC_TYPES)}"
+            ),
+        )
+    entity = (entity or "custom").strip().lower()
+    if entity not in _ALLOWED_CUSTOM_ENTITIES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Unknown entity '{entity}'. Allowed: "
+                f"{', '.join(_ALLOWED_CUSTOM_ENTITIES)}"
+            ),
+        )
+    trigger = (trigger or "manual").strip()
+    if len(trigger) > 200:
+        trigger = trigger[:200]
+    return name, doc_type, entity, trigger
+
+
+@router.post("/document-templates/upload", status_code=201)
+async def upload_custom_document_template(
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
+    file: UploadFile = File(...),
+    name: str = "",
+    doc_type: str = "custom",
+    entity: str = "custom",
+    trigger: str = "manual",
+    description: str = "",
+    project_id: uuid.UUID | None = None,
+    development_id: uuid.UUID | None = None,
+    _perm: None = Depends(RequirePermission("property_dev.create")),
+) -> dict[str, Any]:
+    """Upload a tenant-owned custom document template.
+
+    Accepts .docx / .html / .htm / .pdf / .odt / .md / .txt up to 10 MB.
+    The file lands in ``uploads/property_dev/custom_templates/`` with a
+    UUID-prefixed basename so two uploads with the same original
+    filename don't collide. Metadata is persisted to
+    ``oe_property_dev_custom_template`` and the row appears alongside
+    built-in templates on the settings page.
+    """
+    from sqlalchemy import select
+
+    from app.modules.projects.models import Project
+    from app.modules.property_dev.models import PropertyDevCustomTemplate
+
+    name, doc_type, entity, trigger = _validate_custom_template_metadata(
+        name, doc_type, entity, trigger,
+    )
+
+    raw_filename = file.filename or "template.bin"
+    ext = Path(raw_filename).suffix.lower()
+    if ext not in _ALLOWED_CUSTOM_TEMPLATE_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=(
+                f"Unsupported extension '{ext}'. Allowed: "
+                f"{', '.join(_ALLOWED_CUSTOM_TEMPLATE_EXTENSIONS)}"
+            ),
+        )
+
+    try:
+        content = await file.read()
+    except Exception:
+        _CUSTOM_TEMPLATE_LOG.exception("Unable to read template upload")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to read uploaded template",
+        )
+
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded file is empty",
+        )
+    if len(content) > _CUSTOM_TEMPLATE_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=(
+                f"Template exceeds {_CUSTOM_TEMPLATE_MAX_MB} MB limit"
+            ),
+        )
+
+    is_admin = user_payload.get("role") == "admin"
+    user_id_raw = user_payload.get("sub") or user_payload.get("user_id")
+    if user_id_raw is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        user_id = uuid.UUID(str(user_id_raw))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid user id")
+
+    resolved_project_id: uuid.UUID | None = None
+    if project_id is not None:
+        proj = await session.get(Project, project_id)
+        if proj is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+        if not is_admin and str(proj.owner_id) != str(user_id):
+            raise HTTPException(status_code=404, detail="Project not found")
+        resolved_project_id = project_id
+    else:
+        first_proj = (
+            await session.execute(
+                select(Project.id)
+                .where(Project.owner_id == user_id)
+                .limit(1),
+            )
+        ).scalar_one_or_none()
+        if first_proj is None and not is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "No project found for current user. Create a project "
+                    "before uploading templates."
+                ),
+            )
+        resolved_project_id = first_proj
+
+    _CUSTOM_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+    template_id = uuid.uuid4()
+    safe_basename = Path(raw_filename).name
+    stored_filename = f"{template_id.hex}_{safe_basename}"
+    filepath = _CUSTOM_TEMPLATES_DIR / stored_filename
+
+    try:
+        filepath.write_bytes(content)
+    except Exception:
+        _CUSTOM_TEMPLATE_LOG.exception("Unable to save template upload")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to save template — storage error",
+        )
+
+    row = PropertyDevCustomTemplate(
+        id=template_id,
+        project_id=resolved_project_id,
+        development_id=development_id,
+        name=name,
+        doc_type=doc_type,
+        entity=entity,
+        trigger=trigger,
+        description=description.strip() or None,
+        filename=safe_basename,
+        storage_path=str(filepath.as_posix()),
+        content_type=file.content_type or "application/octet-stream",
+        size_bytes=len(content),
+        created_by=user_id,
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+
+    return {
+        "id": str(row.id),
+        "doc_type": row.doc_type,
+        "title": row.name,
+        "description": row.description or "",
+        "trigger": row.trigger,
+        "entity": row.entity,
+        "pages": "—",
+        "is_custom": True,
+        "filename": row.filename,
+        "content_type": row.content_type,
+        "size_bytes": row.size_bytes,
+        "development_id": (
+            str(row.development_id) if row.development_id else None
+        ),
+        "project_id": (
+            str(row.project_id) if row.project_id else None
+        ),
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+@router.delete("/document-templates/custom/{template_id}", status_code=204)
+async def delete_custom_document_template(
+    template_id: uuid.UUID,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
+    _perm: None = Depends(RequirePermission("property_dev.delete")),
+) -> Response:
+    """Delete a tenant-uploaded custom template (file + row).
+
+    404s — never 403s — when the row is owned by a different tenant so
+    the endpoint can't be turned into a UUID-existence oracle.
+    """
+    from app.modules.projects.repository import ProjectRepository
+    from app.modules.property_dev.models import PropertyDevCustomTemplate
+
+    row = await session.get(PropertyDevCustomTemplate, template_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    is_admin = user_payload.get("role") == "admin"
+    user_id = user_payload.get("sub") or user_payload.get("user_id")
+    if not is_admin and row.project_id is not None:
+        proj = await ProjectRepository(session).get_by_id(row.project_id)
+        if proj is None or str(proj.owner_id) != str(user_id):
+            raise HTTPException(status_code=404, detail="Template not found")
+
+    try:
+        path = Path(row.storage_path)
+        if path.exists():
+            path.unlink()
+    except Exception:
+        _CUSTOM_TEMPLATE_LOG.warning(
+            "Could not unlink custom template file at %s", row.storage_path,
+            exc_info=True,
+        )
+
+    await session.delete(row)
+    await session.commit()
+    return Response(status_code=204)
+
+
+@router.get("/document-templates/custom/{template_id}/download")
+async def download_custom_document_template(
+    template_id: uuid.UUID,
+    session: SessionDep,
+    user_payload: CurrentUserPayload,
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> Response:
+    """Stream a previously-uploaded custom template back to the client.
+
+    Same ownership check as the delete endpoint — 404 (not 403) when
+    the caller doesn't own the row.
+    """
+    from app.modules.projects.repository import ProjectRepository
+    from app.modules.property_dev.models import PropertyDevCustomTemplate
+
+    row = await session.get(PropertyDevCustomTemplate, template_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    is_admin = user_payload.get("role") == "admin"
+    user_id = user_payload.get("sub") or user_payload.get("user_id")
+    if not is_admin and row.project_id is not None:
+        proj = await ProjectRepository(session).get_by_id(row.project_id)
+        if proj is None or str(proj.owner_id) != str(user_id):
+            raise HTTPException(status_code=404, detail="Template not found")
+
+    path = Path(row.storage_path)
+    if not path.exists():
+        raise HTTPException(
+            status_code=410,
+            detail="Template file missing from storage",
+        )
+    data = path.read_bytes()
+    return Response(
+        content=data,
+        media_type=row.content_type or "application/octet-stream",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{row.filename}"'
+            ),
+        },
+    )
+
+
+@router.post("/document-templates/{doc_type}/sample-preview")
+async def sample_preview_document_template(
+    doc_type: str,
+    body: dict[str, Any],
+    _user_payload: CurrentUserPayload,
+    _perm: None = Depends(RequirePermission("property_dev.read")),
+) -> dict[str, Any]:
+    """Render a synthetic sample of the template (no real entities).
+
+    Useful for previewing the template look-and-feel from the settings
+    page. The generator runs against in-memory stub data so any tenant
+    can preview without owning a contract.
+    """
+    import base64
+    import uuid as _uuid
+    from datetime import UTC, date, datetime, timedelta
+    from decimal import Decimal
+    from types import SimpleNamespace
+
+    doc_type = _resolve_doc_type_or_404(doc_type)
+    locale = _normalise_locale(str(body.get("locale", "en")))
+    regulator = str(body.get("regulator", "NONE")).upper()
+
+    # ── Synthetic entities (just enough for each generator) ──
+    now = datetime.now(UTC)
+    today = date.today()
+    development = SimpleNamespace(
+        id=_uuid.uuid4(),
+        name="Sample Riverside Gardens",
+        code="DEV-SAMPLE",
+        metadata_={"regulator": regulator},
+        completion_date=(today + timedelta(days=180)).isoformat(),
+    )
+    plot = SimpleNamespace(
+        id=_uuid.uuid4(),
+        plot_number="P-101",
+        area_m2=Decimal("78.50"),
+        currency="EUR",
+        house_type_label="Modern Townhouse",
+        metadata_={"phase_code": "PH-A", "block_code": "B1"},
+    )
+    buyers = [
+        SimpleNamespace(
+            id=_uuid.uuid4(),
+            full_name="Jane Sample",
+            email="jane.sample@example.com",
+        ),
+        SimpleNamespace(
+            id=_uuid.uuid4(),
+            full_name="John Sample",
+            email="john.sample@example.com",
+        ),
+    ]
+    reservation = SimpleNamespace(
+        id=_uuid.uuid4(),
+        reservation_number="RES-2026-0042",
+        deposit_amount=Decimal("5000.00"),
+        currency="EUR",
+        expires_at=(today + timedelta(days=14)).isoformat(),
+        cooling_off_until=(today + timedelta(days=10)).isoformat(),
+        cooling_off_days=10,
+    )
+    contract = SimpleNamespace(
+        id=_uuid.uuid4(),
+        contract_number="SPA-2026-0017",
+        total_value=Decimal("420000.00"),
+        currency="EUR",
+        status="draft",
+        place="Berlin",
+        signing_date=today.isoformat(),
+        metadata_={
+            "rera_registration_no": "SAMPLE-RERA-001",
+            "escrow_account_no": "DE89-3704-0044-0532-0130-00",
+        },
+    )
+    payment_schedule = SimpleNamespace(currency="EUR")
+    instalments = [
+        SimpleNamespace(
+            sequence=i,
+            milestone_label=label,
+            milestone_event=label,
+            due_date=(today + timedelta(days=30 * i)).isoformat(),
+            amount=Decimal(str(amount)),
+            amount_paid=Decimal("0"),
+        )
+        for i, (label, amount) in enumerate(
+            [
+                ("Booking", 10000),
+                ("Foundation", 84000),
+                ("Structure", 168000),
+                ("Finishing", 105000),
+                ("Handover", 53000),
+            ],
+            start=1,
+        )
+    ]
+    parties = [
+        SimpleNamespace(
+            buyer_id=buyers[0].id,
+            party_role="primary",
+            ownership_pct=Decimal("50"),
+            full_name=buyers[0].full_name,
+            email=buyers[0].email,
+        ),
+        SimpleNamespace(
+            buyer_id=buyers[1].id,
+            party_role="secondary",
+            ownership_pct=Decimal("50"),
+            full_name=buyers[1].full_name,
+            email=buyers[1].email,
+        ),
+    ]
+    handover = SimpleNamespace(
+        id=_uuid.uuid4(),
+        scheduled_at=(today + timedelta(days=120)).isoformat(),
+        completed_at=today.isoformat(),
+        keys_handed_over_at=today.isoformat(),
+    )
+    paid_instalment = SimpleNamespace(
+        sequence=2,
+        milestone_label="Foundation",
+        milestone_event="foundation_complete",
+        amount=Decimal("84000.00"),
+        amount_paid=Decimal("84000.00"),
+        paid_at=now.isoformat(),
+    )
+
+    # ── Dispatch to the right generator ──
+    from app.modules.property_dev.document_templates import (
+        render_handover_certificate_pdf,
+        render_no_objection_certificate_pdf,
+        render_payment_receipt_pdf,
+        render_reservation_receipt_pdf,
+        render_sales_contract_pdf,
+        render_warranty_certificate_pdf,
+    )
+
+    if doc_type == "reservation_receipt":
+        pdf_bytes = render_reservation_receipt_pdf(
+            reservation, plot, development, buyers, locale=locale,
+        )
+    elif doc_type == "sales_contract":
+        pdf_bytes = render_sales_contract_pdf(
+            contract,
+            payment_schedule,
+            instalments,
+            parties,
+            plot,
+            development,
+            locale=locale,
+            buyer_lookup={b.id: b for b in buyers},
+        )
+    elif doc_type == "payment_receipt":
+        pdf_bytes = render_payment_receipt_pdf(
+            paid_instalment,
+            contract,
+            payment_method="bank_transfer",
+            payment_ref="REF-SAMPLE-001",
+            locale=locale,
+            plot=plot,
+            development=development,
+        )
+    elif doc_type == "handover_certificate":
+        pdf_bytes = render_handover_certificate_pdf(
+            handover,
+            contract,
+            snag_count=2,
+            plot=plot,
+            development=development,
+            locale=locale,
+        )
+    elif doc_type == "warranty_certificate":
+        pdf_bytes = render_warranty_certificate_pdf(
+            contract,
+            handover,
+            structural_warranty_years=10,
+            finishing_warranty_years=1,
+            locale=locale,
+            plot=plot,
+            development=development,
+        )
+    else:  # noc
+        pdf_bytes = render_no_objection_certificate_pdf(
+            contract,
+            plot,
+            development,
+            requested_by="Jane Sample (sample)",
+            locale=locale,
+        )
+
+    page_count = 0
+    try:
+        from io import BytesIO as _BIO
+
+        from pypdf import PdfReader as _PdfReader
+
+        page_count = len(_PdfReader(_BIO(pdf_bytes)).pages)
+    except Exception:
+        page_count = max(1, pdf_bytes.count(b"/Type /Page"))
+
+    return {
+        "doc_type": doc_type,
+        "locale": locale,
+        "regulator": regulator,
+        "size_bytes": len(pdf_bytes),
+        "page_count": page_count,
+        "base64": base64.b64encode(pdf_bytes).decode("ascii"),
+        "filename": f"sample-{doc_type}-{locale}.pdf",
+        "sample": True,
     }
 
 
