@@ -7,6 +7,7 @@ This index tracks all project documents, their purpose, status, and relationship
 | Document Path | Title | Purpose | Status | Linked Documents |
 |---|---|---|---|---|
 | [docs/06_delivery/01_coolify-deployment-fix.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/01_coolify-deployment-fix.md) | Resolving Coolify Deployment Failure on VPS | Implementation plan and VPS operator instructions to resolve the deployment exit code 1. | Proposed | None |
+| [docs/06_delivery/02_coolify-unified-deployment.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/02_coolify-unified-deployment.md) | Инструкция по развертыванию OpenConstructionERP через Dockerfile.unified в Coolify | Пошаговый процесс деплоя в режиме "всё в одном" (Unified Image) с SQLite. | Active | None |
 | [docs/RUNBOOK.md](file:///c:/Projects/Mides/Openconstraction/docs/RUNBOOK.md) | OpenConstructionERP Production Runbook | Playbook for the systemd-based deployment on the shared demo VPS. | Legacy | None |
 | [docs/INSTALL_LINUX.md](file:///c:/Projects/Mides/Openconstraction/docs/INSTALL_LINUX.md) | Linux Installation Guide | Step-by-step guide to installing the ERP on Linux. | Active | None |
 
@@ -16,6 +17,7 @@ This index tracks all project documents, their purpose, status, and relationship
 |---|---|---|---|---|
 | [docs/03_decisions/01_coolify-production-dependencies.md](file:///c:/Projects/Mides/Openconstraction/docs/03_decisions/01_coolify-production-dependencies.md) | Production Dependencies Configuration for Coolify Deployment | Decision to install server, semantic, and s3 extras in Dockerfile.backend to fix runtime import crashes. | Accepted | [docs/06_delivery/01_coolify-deployment-fix.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/01_coolify-deployment-fix.md) |
 | [docs/03_decisions/02_coolify-app-dir-configuration.md](file:///c:/Projects/Mides/Openconstraction/docs/03_decisions/02_coolify-app-dir-configuration.md) | Uvicorn Application Directory Configuration in Dockerfile.backend | Decision to add --app-dir backend parameter to Uvicorn command to resolve ModuleNotFoundError at runtime. | Accepted | [docs/06_delivery/01_coolify-deployment-fix.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/01_coolify-deployment-fix.md) |
+| [docs/03_decisions/03_coolify-unified-frontend-build-oom-fix.md](file:///c:/Projects/Mides/Openconstraction/docs/03_decisions/03_coolify-unified-frontend-build-oom-fix.md) | Frontend Build Memory Optimization in Dockerfile.unified | Decision to bypass tsc -b and use npx vite build with memory flags to prevent Out-Of-Memory compilation crashes. | Accepted | [docs/06_delivery/02_coolify-unified-deployment.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/02_coolify-unified-deployment.md) |
 
 ## Product & Architecture
 

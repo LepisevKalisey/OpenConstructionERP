@@ -22,7 +22,7 @@ WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY frontend/ .
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=3072" npx vite build
 
 # ── Stage 2: Production image ────────────────────────────────────────
 FROM python:3.12-slim
