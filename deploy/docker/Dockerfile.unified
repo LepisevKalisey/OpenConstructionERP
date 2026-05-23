@@ -57,7 +57,7 @@ RUN mkdir -p /data && chown oe:oe /data
 # Set ownership
 RUN chown -R oe:oe /app
 
-USER oe
+# USER oe
 
 # Environment defaults for single-image mode
 ENV PYTHONUNBUFFERED=1 \
