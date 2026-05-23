@@ -67,9 +67,11 @@ dmesg | grep -i "oom\|killed"
        pip install --no-cache-dir "./backend[server,semantic,s3]"
    ```
 
-```dockerfile
-CMD ["python", "-m", "uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
-```
+5. **Uvicorn Application Directory Configuration (`--app-dir backend`):** Since the source code is copied into `/app/backend` and `WORKDIR` is `/app`, Uvicorn would fail with `ModuleNotFoundError: No module named 'app'` unless `/app/backend` is added to python's import path.
+   We updated the startup command to include `--app-dir backend`:
+   ```dockerfile
+   CMD ["python", "-m", "uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "backend"]
+   ```
 
 ## Verification
 

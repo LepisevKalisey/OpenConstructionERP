@@ -15,6 +15,7 @@ This index tracks all project documents, their purpose, status, and relationship
 | Document Path | Title | Purpose | Status | Linked Documents |
 |---|---|---|---|---|
 | [docs/03_decisions/01_coolify-production-dependencies.md](file:///c:/Projects/Mides/Openconstraction/docs/03_decisions/01_coolify-production-dependencies.md) | Production Dependencies Configuration for Coolify Deployment | Decision to install server, semantic, and s3 extras in Dockerfile.backend to fix runtime import crashes. | Accepted | [docs/06_delivery/01_coolify-deployment-fix.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/01_coolify-deployment-fix.md) |
+| [docs/03_decisions/02_coolify-app-dir-configuration.md](file:///c:/Projects/Mides/Openconstraction/docs/03_decisions/02_coolify-app-dir-configuration.md) | Uvicorn Application Directory Configuration in Dockerfile.backend | Decision to add --app-dir backend parameter to Uvicorn command to resolve ModuleNotFoundError at runtime. | Accepted | [docs/06_delivery/01_coolify-deployment-fix.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/01_coolify-deployment-fix.md) |
 
 ## Product & Architecture
 
