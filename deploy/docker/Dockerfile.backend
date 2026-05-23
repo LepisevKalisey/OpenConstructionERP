@@ -10,8 +10,9 @@ WORKDIR /app
 
 COPY backend/pyproject.toml backend/
 COPY README.md backend/
-RUN pip install --no-cache-dir ./backend && \
-    pip install --no-cache-dir "ezdxf>=0.18.0" || true
+RUN mkdir -p frontend/dist && \
+    pip install --no-cache-dir ./backend && \
+    (pip install --no-cache-dir "ezdxf>=0.18.0" || true)
 
 COPY backend/ backend/
 
