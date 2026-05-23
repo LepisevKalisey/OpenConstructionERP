@@ -6,7 +6,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --ignore-scripts
 
 COPY frontend/ .
-RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
+RUN NODE_OPTIONS="--max-old-space-size=3072" npx vite build
 
 FROM nginx:alpine
 
