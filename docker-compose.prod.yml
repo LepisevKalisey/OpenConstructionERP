@@ -56,8 +56,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    ports:
-      - "${FRONTEND_PORT:-5173}:80"
+    expose:
+      - "80"
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:80/"]
       interval: 15s
