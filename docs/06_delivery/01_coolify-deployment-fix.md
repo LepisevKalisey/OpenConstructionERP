@@ -2,7 +2,7 @@
 
 Implementation plan and diagnostic instructions to fix the VPS deployment failure (exit code 1) during the docker compose up phase.
 
-- **Status**: Proposed
+- **Status**: Active
 - **Date**: 2026-05-23
 - **Author**: Antigravity (DevOps Engineer)
 
@@ -60,11 +60,19 @@ dmesg | grep -i "oom\|killed"
    `exec: "uvicorn": executable file not found in $PATH`
    We resolved this by invoking uvicorn as a python module: `python -m uvicorn`.
 
+4. **Production Dependencies (`[server,semantic,s3]`):** Running standard `pip install ./backend` did not install optional production modules like `asyncpg` (for Postgres), `qdrant-client` (for Qdrant vector search), and `aioboto3` (for S3 support), causing immediate startup crashes (`ModuleNotFoundError`).
+   We updated the installation command to target these extras:
+   ```dockerfile
+   RUN mkdir -p frontend/dist && \
+       pip install --no-cache-dir "./backend[server,semantic,s3]"
+   ```
+
 ```dockerfile
 CMD ["python", "-m", "uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ## Verification
 
-1. Trigger a new deployment via Coolify API or UI.
-2. Confirm the containers start successfully.
+1. Commit and push the changes to Git.
+2. Trigger a new deployment via the Coolify API/UI.
+3. Confirm all containers (`postgres`, `qdrant`, `backend`, `frontend`) start and report `healthy`.

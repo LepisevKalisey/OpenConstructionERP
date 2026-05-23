@@ -10,6 +10,12 @@ This index tracks all project documents, their purpose, status, and relationship
 | [docs/RUNBOOK.md](file:///c:/Projects/Mides/Openconstraction/docs/RUNBOOK.md) | OpenConstructionERP Production Runbook | Playbook for the systemd-based deployment on the shared demo VPS. | Legacy | None |
 | [docs/INSTALL_LINUX.md](file:///c:/Projects/Mides/Openconstraction/docs/INSTALL_LINUX.md) | Linux Installation Guide | Step-by-step guide to installing the ERP on Linux. | Active | None |
 
+## Decisions
+
+| Document Path | Title | Purpose | Status | Linked Documents |
+|---|---|---|---|---|
+| [docs/03_decisions/01_coolify-production-dependencies.md](file:///c:/Projects/Mides/Openconstraction/docs/03_decisions/01_coolify-production-dependencies.md) | Production Dependencies Configuration for Coolify Deployment | Decision to install server, semantic, and s3 extras in Dockerfile.backend to fix runtime import crashes. | Accepted | [docs/06_delivery/01_coolify-deployment-fix.md](file:///c:/Projects/Mides/Openconstraction/docs/06_delivery/01_coolify-deployment-fix.md) |
+
 ## Product & Architecture
 
 | Document Path | Title | Purpose | Status | Linked Documents |
