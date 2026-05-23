@@ -61,10 +61,10 @@ dmesg | grep -i "oom\|killed"
    We resolved this by invoking uvicorn as a python module: `python -m uvicorn`.
 
 4. **Production Dependencies (`[server,semantic,s3]`):** Running standard `pip install ./backend` did not install optional production modules like `asyncpg` (for Postgres), `qdrant-client` (for Qdrant vector search), and `aioboto3` (for S3 support), causing immediate startup crashes (`ModuleNotFoundError`).
-   We updated the installation command to target these extras:
+   Additionally, standard PyTorch installation downloads ~2GB of unused NVIDIA/CUDA packages. We updated the installation command to target production extras and use the PyTorch CPU-only index for optimization:
    ```dockerfile
    RUN mkdir -p frontend/dist && \
-       pip install --no-cache-dir "./backend[server,semantic,s3]"
+       pip install --no-cache-dir "./backend[server,semantic,s3]" --extra-index-url https://download.pytorch.org/whl/cpu
    ```
 
 5. **Uvicorn Application Directory Configuration (`--app-dir backend`):** Since the source code is copied into `/app/backend` and `WORKDIR` is `/app`, Uvicorn would fail with `ModuleNotFoundError: No module named 'app'` unless `/app/backend` is added to python's import path.

@@ -11,7 +11,7 @@ WORKDIR /app
 COPY backend/pyproject.toml backend/
 COPY README.md backend/
 RUN mkdir -p frontend/dist && \
-    pip install --no-cache-dir "./backend[server,semantic,s3]"
+    pip install --no-cache-dir "./backend[server,semantic,s3]" --extra-index-url https://download.pytorch.org/whl/cpu
 
 COPY backend/ backend/
 
