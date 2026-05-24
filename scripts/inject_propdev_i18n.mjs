@@ -19,34 +19,31 @@ const LOCALES_DIR = path.join(__dirname, '..', 'frontend', 'src', 'app', 'locale
 
 // Master key order — keep stable so diffs are reviewable.
 const KEY_ORDER = [
-  'title', 'subtitle', 'new_development', 'new_plot', 'new_house_type', 'new_buyer',
+  'title', 'subtitle', 'overview', 'dashboards_short', 'open_dashboards', 'dashboards_link',
+  'buyers_pipeline', 'handovers_short', 'warranty_short', 'recent_activity', 'last_n',
+  'quick_links', 'developments_snapshot', 'view_all', 'phase', 'sold_pct', 'kpi_open_leads',
+  'kpi_reservations', 'kpi_available_plots', 'kpi_handovers', 'kpi_warranty', 'kpi_contracted',
+  'stage_filter', 'stage_completed', 'no_buyers_for_stage', 'open_buyer_aria', 'related',
+  'view_plot_on_map', 'view_finance', 'view_contracts', 'view_crm', 'open_development_aria',
+  'open_dashboards_for', 'new_development', 'new_plot', 'new_house_type', 'new_buyer',
   'pipeline_intro', 'step_dev', 'step_buyers', 'step_contracts', 'step_finance',
   'developments', 'plots', 'house_types', 'buyers', 'handovers', 'warranty',
-  'untitled',
-  'load_error',
-  'empty_developments', 'empty_developments_desc',
-  'plots_sold', 'contracted', 'open_snags',
-  'empty_plots', 'empty_plots_desc',
-  'empty_house_types', 'empty_house_types_desc',
-  'area', 'levels', 'base_price', 'variants',
-  'empty_buyers', 'empty_buyers_desc',
-  'buyer', 'email', 'stage', 'contract_value', 'freeze_deadline',
-  'in_days', 'overdue_days',
-  'empty_handovers', 'empty_handovers_desc',
-  'plot_n', 'no_buyer', 'no_handovers', 'completed', 'scheduled', 'snags',
-  'warranty_updated', 'warranty_needs_buyer',
-  'no_claims', 'no_claims_desc',
-  'plot', 'category', 'description', 'status',
-  'accept', 'reject', 'close',
-  'built', 'house_type', 'orientation', 'garden', 'reserved_until',
-  'plot_reserved', 'reserve_plot', 'full_name', 'reserve',
-  'signed', 'deposit', 'days_overdue', 'days_left',
-  'selections', 'no_selections',
+  'untitled', 'load_error', 'empty_developments', 'empty_developments_desc',
+  'plots_sold', 'contracted', 'open_snags', 'empty_plots', 'empty_plots_desc',
+  'empty_house_types', 'empty_house_types_desc', 'area', 'levels', 'base_price',
+  'variants', 'empty_buyers', 'empty_buyers_desc', 'buyer', 'email', 'stage',
+  'contract_value', 'freeze_deadline', 'in_days', 'overdue_days', 'empty_handovers',
+  'empty_handovers_desc', 'plot_n', 'no_buyer', 'no_handovers', 'completed',
+  'scheduled', 'snags', 'warranty_updated', 'warranty_needs_buyer', 'no_claims',
+  'no_claims_desc', 'plot', 'category', 'description', 'status', 'accept',
+  'reject', 'close', 'built', 'house_type', 'orientation', 'garden',
+  'reserved_until', 'plot_reserved', 'reserve_plot', 'full_name', 'reserve',
+  'signed', 'deposit', 'days_overdue', 'days_left', 'selections', 'no_selections',
   'stage_lead', 'stage_reserved', 'stage_contracted', 'stage_handover', 'stage_cancelled',
-  'contract_signed', 'sign_contract', 'contract',
-  'development_created', 'plot_created', 'house_type_created', 'buyer_created',
-  'project', 'code', 'name', 'total_plots',
-  'development', 'plot_number', 'bedrooms', 'phone',
+  'contract_signed', 'sign_contract', 'contract', 'development_created', 'plot_created',
+  'house_type_created', 'buyer_created', 'project', 'code', 'name', 'total_plots',
+  'development', 'plot_number', 'bedrooms', 'phone', 'unknown_development',
+  'select_development_first', 'plot_number_required'
 ];
 
 // Per-locale translations. Each entry maps the bare key (without
@@ -103,7 +100,7 @@ function injectIntoFile(filePath, locale) {
   return 'inserted';
 }
 
-const LOCALES = Object.keys(TRANSLATIONS).sort();
+const LOCALES = fs.readdirSync(LOCALES_DIR).filter((f) => f.endsWith('.ts')).map((f) => f.replace(/\.ts$/, '')).sort();
 let inserted = 0, replaced = 0;
 for (const loc of LOCALES) {
   const fp = path.join(LOCALES_DIR, `${loc}.ts`);

@@ -21,8 +21,6 @@ import {
 import { APP_VERSION, APP_BUILD_FINGERPRINT } from '@/shared/lib/version';
 import { useToastStore } from '@/stores/useToastStore';
 import { useI18nReady } from '@/shared/lib/useI18nReady';
-import { SupportUsButton } from './SupportUsButton';
-import { SubscribeButton } from './SubscribeButton';
 
 /** Map English page titles (passed from App.tsx routes) to i18n keys. */
 const TITLE_I18N_MAP: Record<string, string> = {
@@ -185,13 +183,7 @@ export function Header({ title, onMenuClick }: HeaderProps) {
             help dropdown. The little red dot turns on when errors were
             captured this session. */}
         <NotificationBell />
-        <SupportUsButton />
         <BugReportMenu />
-        {/* Subscribe sits just left of Help so the two "ask the user
-            for something light" CTAs (Support / Subscribe) bracket the
-            bug + help buttons. Sky-blue accent distinguishes Subscribe
-            from the neutral Help and amber Support. */}
-        <SubscribeButton />
         <HelpMenu />
 
         {/* Hairline divider between Zone 3 and Zone 4. */}

@@ -347,7 +347,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   JPY: '\u00a5', CNY: '\u00a5', KRW: '\u20a9', INR: '\u20b9', BRL: 'R$', MXN: 'Mex$', TRY: '\u20ba',
   RUB: '\u20bd', PLN: 'z\u0142', CZK: 'K\u010d', SEK: 'kr', NOK: 'kr', DKK: 'kr',
   AED: '\u062f.\u0625', SAR: '\ufdfc', QAR: '\ufdfc', ZAR: 'R', EGP: 'E\u00a3', NGN: '\u20a6',
-  SGD: 'S$', MYR: 'RM', THB: '\u0e3f', IDR: 'Rp', PHP: '\u20b1', HKD: 'HK$',
+  SGD: 'S$', MYR: 'RM', THB: '\u0e3f', IDR: 'Rp', PHP: '\u20b1', HKD: 'HK$', KZT: '₸',
 };
 
 /**
@@ -693,7 +693,7 @@ export const COMMON_CURRENCIES: readonly string[] = [
   // Major regional currencies
   'CAD', 'AUD', 'NZD', 'SGD', 'HKD', 'KRW',
   // Emerging-market & commodity currencies
-  'INR', 'BRL', 'MXN', 'ZAR', 'TRY', 'RUB',
+  'INR', 'BRL', 'MXN', 'ZAR', 'TRY', 'RUB', 'KZT',
   // EU non-euro
   'PLN', 'CZK', 'HUF', 'SEK', 'NOK', 'DKK', 'RON',
   // Middle East
@@ -706,7 +706,7 @@ export const COMMON_CURRENCIES: readonly string[] = [
 export const CURRENCY_SYMBOL: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', CHF: 'Fr', JPY: '¥', CNY: '¥',
   CAD: '$', AUD: '$', NZD: '$', SGD: '$', HKD: '$', KRW: '₩',
-  INR: '₹', BRL: 'R$', MXN: '$', ZAR: 'R', TRY: '₺', RUB: '₽',
+  INR: '₹', BRL: 'R$', MXN: '$', ZAR: 'R', TRY: '₺', RUB: '₽', KZT: '₸',
   PLN: 'zł', CZK: 'Kč', HUF: 'Ft', SEK: 'kr', NOK: 'kr', DKK: 'kr', RON: 'lei',
   AED: 'د.إ', SAR: '﷼', QAR: '﷼', ILS: '₪',
   THB: '฿', IDR: 'Rp', MYR: 'RM', PHP: '₱', VND: '₫',

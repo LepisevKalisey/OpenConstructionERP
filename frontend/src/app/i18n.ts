@@ -1,35 +1,11 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { getModuleTranslations } from '@/modules/_registry';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇬🇧', country: 'gb' },
-  { code: 'de', name: 'Deutsch', english: 'German', flag: '🇩🇪', country: 'de' },
-  { code: 'fr', name: 'Français', english: 'French', flag: '🇫🇷', country: 'fr' },
-  { code: 'es', name: 'Español', english: 'Spanish', flag: '🇪🇸', country: 'es' },
-  { code: 'pt', name: 'Português', english: 'Portuguese', flag: '🇧🇷', country: 'br' },
   { code: 'ru', name: 'Русский', english: 'Russian', flag: '🇷🇺', country: 'ru' },
-  { code: 'zh', name: '简体中文', english: 'Chinese (Simplified)', flag: '🇨🇳', country: 'cn' },
-  { code: 'ar', name: 'العربية', english: 'Arabic', flag: '🇸🇦', country: 'sa', dir: 'rtl' },
-  { code: 'hi', name: 'हिन्दी', english: 'Hindi', flag: '🇮🇳', country: 'in' },
-  { code: 'tr', name: 'Türkçe', english: 'Turkish', flag: '🇹🇷', country: 'tr' },
-  { code: 'it', name: 'Italiano', english: 'Italian', flag: '🇮🇹', country: 'it' },
-  { code: 'nl', name: 'Nederlands', english: 'Dutch', flag: '🇳🇱', country: 'nl' },
-  { code: 'pl', name: 'Polski', english: 'Polish', flag: '🇵🇱', country: 'pl' },
-  { code: 'cs', name: 'Čeština', english: 'Czech', flag: '🇨🇿', country: 'cz' },
-  { code: 'ja', name: '日本語', english: 'Japanese', flag: '🇯🇵', country: 'jp' },
-  { code: 'ko', name: '한국어', english: 'Korean', flag: '🇰🇷', country: 'kr' },
-  { code: 'sv', name: 'Svenska', english: 'Swedish', flag: '🇸🇪', country: 'se' },
-  { code: 'no', name: 'Norsk', english: 'Norwegian', flag: '🇳🇴', country: 'no' },
-  { code: 'da', name: 'Dansk', english: 'Danish', flag: '🇩🇰', country: 'dk' },
-  { code: 'fi', name: 'Suomi', english: 'Finnish', flag: '🇫🇮', country: 'fi' },
-  { code: 'bg', name: 'Български', english: 'Bulgarian', flag: '🇧🇬', country: 'bg' },
-  { code: 'hr', name: 'Hrvatski', english: 'Croatian', flag: '🇭🇷', country: 'hr' },
-  { code: 'id', name: 'Bahasa Indonesia', english: 'Indonesian', flag: '🇮🇩', country: 'id' },
-  { code: 'ro', name: 'Română', english: 'Romanian', flag: '🇷🇴', country: 'ro' },
-  { code: 'th', name: 'ไทย', english: 'Thai', flag: '🇹🇭', country: 'th' },
-  { code: 'vi', name: 'Tiếng Việt', english: 'Vietnamese', flag: '🇻🇳', country: 'vn' },
-  { code: 'mn', name: 'Монгол', english: 'Mongolian', flag: '🇲🇳', country: 'mn' },
 ];
 
 export function getLanguageByCode(code: string): (typeof SUPPORTED_LANGUAGES)[number] {
@@ -68,13 +44,20 @@ export async function loadLocaleResource(code: string): Promise<void> {
   try {
     const mod = await import(`./locales/${code}.ts`);
     const resource = (mod.default ?? mod) as { translation: Record<string, string> };
+    
+    // Merge core translations with module-bundled translations to prevent module keys
+    // from being overwritten by the shallow namespace replacement.
+    const moduleTrans = getModuleTranslations();
+    const moduleKeys = moduleTrans[code] || {};
+    const mergedTranslation = { ...resource.translation, ...moduleKeys };
+
     // ``deep=false`` keeps the resource bundle as a flat dictionary —
     // critical because every locale file ships dotted keys like
     // ``"match_elements.title"`` and a deep merge auto-nests them under
     // ``match_elements.title``, which then can't be found by the flat
     // lookup the rest of the app expects (and breaks Header/Sidebar
     // translations for any locale loaded after init).
-    i18n.addResourceBundle(code, 'translation', resource.translation, false, true);
+    i18n.addResourceBundle(code, 'translation', mergedTranslation, false, true);
     loadedLocales.add(code);
     // Force every ``useTranslation`` subscriber to re-render with the
     // freshly merged bundle. ``addResourceBundle`` already emits
@@ -216,7 +199,6 @@ if (initialLanguage !== 'en') {
 }
 
 // Merge module-bundled translations (nav keys for regional modules, etc.)
-import { getModuleTranslations } from '@/modules/_registry';
 const moduleTrans = getModuleTranslations();
 for (const [lng, keys] of Object.entries(moduleTrans)) {
   if (keys && typeof keys === 'object') {

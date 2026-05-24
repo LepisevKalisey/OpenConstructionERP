@@ -23,6 +23,7 @@ const SEED_RATES_VS_USD: Record<string, number> = {
   JPY: 0.0064,
   CNY: 0.139,
   RUB: 0.011,
+  KZT: 0.0022,
   INR: 0.012,
   CAD: 0.73,
   AUD: 0.66,

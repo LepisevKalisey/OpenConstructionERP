@@ -202,6 +202,7 @@ export const CURRENCY_GROUPS: OptionGroup[] = [
       { value: 'PKR', label: 'PKR (₨) — Pakistani Rupee' },
       { value: 'BDT', label: 'BDT (৳) — Bangladeshi Taka' },
       { value: 'LKR', label: 'LKR (Rs) — Sri Lankan Rupee' },
+      { value: 'KZT', label: 'KZT (₸) — Kazakhstani Tenge' },
     ],
   },
   {

@@ -1,143 +1,637 @@
 # i18n Coverage Audit Report
-Master: en.ts — 4944 keys
+Master: en.ts — 6523 keys
 Locales audited: 26
 
 ## Summary table
 
 locale    missing  identical  total_keys  status
 ------------------------------------------------
-ar              0        293        5005  RED >=200
-bg              0       1512        4944  RED >=200
-cs              0       1554        4944  RED >=200
-da              0       1632        4944  RED >=200
-de              0       1308        5000  RED >=200
-es              0       1271        4981  RED >=200
-fi              0       1518        4944  RED >=200
-fr              0       1533        4981  RED >=200
-hi              0       1453        4944  RED >=200
-hr              0       2261        4944  RED >=200
-id              0       2281        4944  RED >=200
-it              0       1488        4944  RED >=200
-ja              0       1439        4944  RED >=200
-ko              0       1440        4944  RED >=200
-mn              0          6        4944  GREEN <50
-nl              0       1626        4944  RED >=200
-no              0       1593        4944  RED >=200
-pl              0       1482        4944  RED >=200
-pt              0       1424        4944  RED >=200
-ro              0       2274        4944  RED >=200
-ru              0       1360        4985  RED >=200
-sv              0       1546        4944  RED >=200
-th              0       2293        4944  RED >=200
-tr              0       1470        4944  RED >=200
-vi              0       2255        4944  RED >=200
-zh              0       1399        4944  RED >=200
+ar            835        334        5777  RED >=200
+bg            835       2000        5716  RED >=200
+cs            835       2045        5716  RED >=200
+da            835       2125        5716  RED >=200
+de            371       1337        6236  RED >=200
+es            736       1326        5852  RED >=200
+fi            835       2005        5716  RED >=200
+fr            736       1603        5852  RED >=200
+hi            835       1496        5716  RED >=200
+hr            835       2743        5716  RED >=200
+id            835       2332        5716  RED >=200
+it            736       1550        5815  RED >=200
+ja            835       1481        5716  RED >=200
+ko            835       1481        5716  RED >=200
+mn            835         70        5716  RED >=200
+nl            736       1721        5815  RED >=200
+no            835       2085        5716  RED >=200
+pl            736       1540        5815  RED >=200
+pt            736       1486        5815  RED >=200
+ro            835       2755        5716  RED >=200
+ru            365       1016        6231  RED >=200
+sv            835       2037        5716  RED >=200
+th            835       2330        5716  RED >=200
+tr            835       1515        5716  RED >=200
+vi            835       2292        5716  RED >=200
+zh            835       1441        5716  RED >=200
 
 ## Top 20 missing keys per locale
 
-### ar (0 missing, 293 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/ar.ts
-  (no missing keys)
+### ar (835 missing, 334 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/ar.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### bg (0 missing, 1512 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/bg.ts
-  (no missing keys)
+### bg (835 missing, 2000 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/bg.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### cs (0 missing, 1554 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/cs.ts
-  (no missing keys)
+### cs (835 missing, 2045 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/cs.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### da (0 missing, 1632 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/da.ts
-  (no missing keys)
+### da (835 missing, 2125 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/da.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### de (0 missing, 1308 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/de.ts
-  (no missing keys)
+### de (371 missing, 1337 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/de.ts
+  - audit.col_action  :: EN='Action'
+  - audit.col_actor  :: EN='Actor'
+  - audit.col_preview  :: EN='Preview'
+  - audit.col_severity  :: EN='Severity'
+  - audit.col_target  :: EN='Target'
+  - audit.col_timestamp  :: EN='Timestamp'
+  - audit.export_json  :: EN='Export JSON'
+  - audit.page_of_total  :: EN='Showing {{start}}–{{end}} of {{total}}'
+  - audit.page_size  :: EN='Rows'
+  - audit.preset_all  :: EN='All time'
+  - audit.preset_custom  :: EN='Custom'
+  - audit.preset_last30  :: EN='Last 30d'
+  - audit.preset_last7  :: EN='Last 7d'
+  - audit.preset_today  :: EN='Today'
+  - audit.range_label  :: EN='Range'
+  - audit.search_label  :: EN='Search'
+  - audit.search_placeholder  :: EN='Search actor, entity, IP, payload…'
+  - audit.sort_timestamp  :: EN='Sort by timestamp'
+  - bim.element_bundles.heading  :: EN='Element Bundles'
+  - bim.element_bundles.subtitle  :: EN='Save named selections you reuse across clash, BOQ link, and '
 
-### es (0 missing, 1271 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/es.ts
-  (no missing keys)
+### es (736 missing, 1326 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/es.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### fi (0 missing, 1518 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/fi.ts
-  (no missing keys)
+### fi (835 missing, 2005 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/fi.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### fr (0 missing, 1533 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/fr.ts
-  (no missing keys)
+### fr (736 missing, 1603 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/fr.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### hi (0 missing, 1453 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/hi.ts
-  (no missing keys)
+### hi (835 missing, 1496 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/hi.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### hr (0 missing, 2261 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/hr.ts
-  (no missing keys)
+### hr (835 missing, 2743 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/hr.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### id (0 missing, 2281 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/id.ts
-  (no missing keys)
+### id (835 missing, 2332 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/id.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### it (0 missing, 1488 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/it.ts
-  (no missing keys)
+### it (736 missing, 1550 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/it.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### ja (0 missing, 1439 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/ja.ts
-  (no missing keys)
+### ja (835 missing, 1481 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/ja.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### ko (0 missing, 1440 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/ko.ts
-  (no missing keys)
+### ko (835 missing, 1481 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/ko.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### mn (0 missing, 6 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/mn.ts
-  (no missing keys)
+### mn (835 missing, 70 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/mn.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### nl (0 missing, 1626 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/nl.ts
-  (no missing keys)
+### nl (736 missing, 1721 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/nl.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### no (0 missing, 1593 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/no.ts
-  (no missing keys)
+### no (835 missing, 2085 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/no.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### pl (0 missing, 1482 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/pl.ts
-  (no missing keys)
+### pl (736 missing, 1540 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/pl.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### pt (0 missing, 1424 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/pt.ts
-  (no missing keys)
+### pt (736 missing, 1486 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/pt.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### ro (0 missing, 2274 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/ro.ts
-  (no missing keys)
+### ro (835 missing, 2755 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/ro.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### ru (0 missing, 1360 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/ru.ts
-  (no missing keys)
+### ru (365 missing, 1016 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/ru.ts
+  - audit.col_action  :: EN='Action'
+  - audit.col_actor  :: EN='Actor'
+  - audit.col_preview  :: EN='Preview'
+  - audit.col_severity  :: EN='Severity'
+  - audit.col_target  :: EN='Target'
+  - audit.col_timestamp  :: EN='Timestamp'
+  - audit.export_json  :: EN='Export JSON'
+  - audit.page_of_total  :: EN='Showing {{start}}–{{end}} of {{total}}'
+  - audit.page_size  :: EN='Rows'
+  - audit.preset_all  :: EN='All time'
+  - audit.preset_custom  :: EN='Custom'
+  - audit.preset_last30  :: EN='Last 30d'
+  - audit.preset_last7  :: EN='Last 7d'
+  - audit.preset_today  :: EN='Today'
+  - audit.range_label  :: EN='Range'
+  - audit.search_label  :: EN='Search'
+  - audit.search_placeholder  :: EN='Search actor, entity, IP, payload…'
+  - audit.sort_timestamp  :: EN='Sort by timestamp'
+  - bim.element_bundles.heading  :: EN='Element Bundles'
+  - bim.element_bundles.subtitle  :: EN='Save named selections you reuse across clash, BOQ link, and '
 
-### sv (0 missing, 1546 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/sv.ts
-  (no missing keys)
+### sv (835 missing, 2037 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/sv.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### th (0 missing, 2293 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/th.ts
-  (no missing keys)
+### th (835 missing, 2330 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/th.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### tr (0 missing, 1470 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/tr.ts
-  (no missing keys)
+### tr (835 missing, 1515 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/tr.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### vi (0 missing, 2255 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/vi.ts
-  (no missing keys)
+### vi (835 missing, 2292 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/vi.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
-### zh (0 missing, 1399 identical)
-path: C:/Users/Artem Boiko/Desktop/CodeProjects/ERP_26030500/frontend/src/app/locales/zh.ts
-  (no missing keys)
+### zh (835 missing, 1441 identical)
+path: C:/Projects/Mides/Openconstraction/frontend/src/app/locales/zh.ts
+  - agents.catalogue  :: EN='Available agents'
+  - agents.empty  :: EN='No agents registered.'
+  - agents.final_output  :: EN='Final answer (review before applying)'
+  - agents.input_placeholder  :: EN='Describe what you want the agent to do…'
+  - agents.iterations  :: EN='Iterations'
+  - agents.loading  :: EN='Loading agents…'
+  - agents.new_run  :: EN='New run'
+  - agents.no_project  :: EN='No project selected — run will be global.'
+  - agents.pick_one  :: EN='Select an agent on the left to start a new run.'
+  - agents.project_attached  :: EN='Run will be linked to active project.'
+  - agents.run  :: EN='Run'
+  - agents.start_error  :: EN='Failed to start the run.'
+  - agents.status.completed  :: EN='completed'
+  - agents.status.failed  :: EN='failed'
+  - agents.status.running  :: EN='running'
+  - agents.step.answer  :: EN='Answer'
+  - agents.step.error  :: EN='Error'
+  - agents.step.observation  :: EN='Observation'
+  - agents.step.thought  :: EN='Thought'
+  - agents.step.tool_call  :: EN='Tool call'
 
 ## v3.0.5 critical-key coverage
 
@@ -145,347 +639,380 @@ All v3.0.5 keys present and translated in every locale.
 
 ## Top keys missing in the MOST locales (backfill priority)
 
-(No missing keys — every locale has every key. Backfill priority comes from the identical-value list below.)
+- [26/26 locales] audit.col_action  :: EN='Action'
+- [26/26 locales] audit.col_actor  :: EN='Actor'
+- [26/26 locales] audit.col_preview  :: EN='Preview'
+- [26/26 locales] audit.col_severity  :: EN='Severity'
+- [26/26 locales] audit.col_target  :: EN='Target'
+- [26/26 locales] audit.col_timestamp  :: EN='Timestamp'
+- [26/26 locales] audit.export_json  :: EN='Export JSON'
+- [26/26 locales] audit.page_of_total  :: EN='Showing {{start}}–{{end}} of {{total}}'
+- [26/26 locales] audit.page_size  :: EN='Rows'
+- [26/26 locales] audit.preset_all  :: EN='All time'
+- [26/26 locales] audit.preset_custom  :: EN='Custom'
+- [26/26 locales] audit.preset_last30  :: EN='Last 30d'
+- [26/26 locales] audit.preset_last7  :: EN='Last 7d'
+- [26/26 locales] audit.preset_today  :: EN='Today'
+- [26/26 locales] audit.range_label  :: EN='Range'
+- [26/26 locales] audit.search_label  :: EN='Search'
+- [26/26 locales] audit.search_placeholder  :: EN='Search actor, entity, IP, payload…'
+- [26/26 locales] audit.sort_timestamp  :: EN='Sort by timestamp'
+- [26/26 locales] bim.element_bundles.heading  :: EN='Element Bundles'
+- [26/26 locales] bim.element_bundles.subtitle  :: EN='Save named selections you reuse across clash, BOQ link, and color-by'
+- [26/26 locales] bim.element_bundles.tab  :: EN='Element Bundles'
+- [26/26 locales] bim.section_stamp.toggle  :: EN='Section Stamp'
+- [26/26 locales] bim.section_stamp.tooltip  :: EN='Fill the section cut with hatching'
+- [26/26 locales] bim.site_compass.aria_label  :: EN='Site Compass — 3D navigation cube'
+- [26/26 locales] bim.solo_mode.group_header  :: EN='Solo Mode'
+- [26/26 locales] bim.solo_mode.hidden_badge  :: EN='{{count}} hidden'
+- [26/26 locales] bim.solo_mode.show_all  :: EN='Show all'
+- [26/26 locales] bim.surveyor_snap.label_edge_midpoint  :: EN='Snap: edge midpoint'
+- [26/26 locales] bim.surveyor_snap.label_edge_perp  :: EN='Snap: edge'
+- [26/26 locales] bim.surveyor_snap.label_vertex  :: EN='Snap: vertex'
 
 ## Top keys identical-to-EN across the MOST locales (real backfill priority)
 
 - [26/26 locales identical] boq.export_format_csv  :: EN='CSV (.csv)'
+- [26/26 locales identical] boq.shortcut_ctrl_slash  :: EN='Ctrl+/'
+- [26/26 locales identical] boq.shortcut_del  :: EN='Del'
 - [26/26 locales identical] boq.export_format_gaeb  :: EN='GAEB XML (.x83)'
 - [26/26 locales identical] boq.export_format_excel  :: EN='Excel (.xlsx)'
-- [26/26 locales identical] boq.shortcut_del  :: EN='Del'
-- [26/26 locales identical] boq.shortcut_ctrl_slash  :: EN='Ctrl+/'
+- [26/26 locales identical] admin.permissions.toggle_success_message  :: EN='{{key}} → {{role}}'
 - [26/26 locales identical] requirements.regex_placeholder  :: EN='^F[0-9]+$'
-- [25/26 locales identical] nav.hse_advanced  :: EN='HSE Management'
-- [25/26 locales identical] nav.group_commercial_desc  :: EN='Commercial pipeline — CRM, contracts, bids, variations, suppliers, property deve'
-- [25/26 locales identical] nav.supplier_catalogs  :: EN='Supplier Catalogs'
+- [25/26 locales identical] admin.permissions.role_manager  :: EN='Manager'
 - [25/26 locales identical] notification.submittal_status_changed_body  :: EN='{{submittal_number}} ({{title}}) — {{new_status}}'
-- [25/26 locales identical] bim.upload_advanced_element_data_hint  :: EN='CSV / Excel'
-- [25/26 locales identical] notifications.transmittal.issued.body  :: EN='{{code}} — {{title}}'
-- [25/26 locales identical] boq.resource_variant_pill  :: EN='▾ {{count}}'
-- [25/26 locales identical] finance.original  :: EN='Original'
-- [25/26 locales identical] nav.schedule_advanced  :: EN='Advanced Schedule'
-- [25/26 locales identical] nav.carbon  :: EN='Carbon & ESG'
-- [25/26 locales identical] nav.resources  :: EN='Resources & Crew'
-- [25/26 locales identical] nav.group_bi_desc  :: EN='BI dashboards built on warehouse projections'
-- [25/26 locales identical] nav.service  :: EN='Service & Maintenance'
-- [25/26 locales identical] notifications.submittal.approved.body  :: EN='{{code}} — {{title}}'
+- [25/26 locales identical] integrations.telegram  :: EN='Telegram'
 - [25/26 locales identical] match_elements.new_text.lines_placeholder  :: EN='Stahlbetonwand C30/37, d=240mm ленточный фундамент 800x600 concrete slab 200mm'
-- [25/26 locales identical] nav.qms  :: EN='Quality Management'
-- [25/26 locales identical] notifications.rfi.assigned.body  :: EN='{{code}} — {{title}}'
-- [25/26 locales identical] notifications.risk.assigned.body  :: EN='{{code}} — {{title}}'
-- [25/26 locales identical] projects.photos.position_label  :: EN='{{current}} / {{total}}'
 - [25/26 locales identical] reports.gaeb_xml  :: EN='GAEB XML'
+- [25/26 locales identical] match_elements.pipeline.system  :: EN='system'
+- [25/26 locales identical] notifications.transmittal.issued.body  :: EN='{{code}} — {{title}}'
 - [25/26 locales identical] bim.upload_advanced_geometry_hint  :: EN='DAE / COLLADA'
-- [25/26 locales identical] boq.resource_total_in_base  :: EN='{{foreign}} ≈ {{base}} (1 {{code}} = {{rate}} {{baseCode}})'
+- [25/26 locales identical] notifications.risk.assigned.body  :: EN='{{code}} — {{title}}'
 - [25/26 locales identical] notifications.submittal.submitted.body  :: EN='{{code}} — {{title}}'
-- [25/26 locales identical] nav.equipment  :: EN='Equipment & Fleet'
+- [25/26 locales identical] boq.resource_total_in_base  :: EN='{{foreign}} ≈ {{base}} (1 {{code}} = {{rate}} {{baseCode}})'
+- [25/26 locales identical] notifications.rfi.assigned.body  :: EN='{{code}} — {{title}}'
+- [25/26 locales identical] boq.resource_variant_pill  :: EN='▾ {{count}}'
+- [25/26 locales identical] bim.upload_advanced_element_data_hint  :: EN='CSV / Excel'
+- [25/26 locales identical] finance.original  :: EN='Original'
+- [25/26 locales identical] integrations.teams  :: EN='Microsoft Teams'
+- [25/26 locales identical] notifications.submittal.approved.body  :: EN='{{code}} — {{title}}'
+- [24/26 locales identical] admin.permissions.legend_denied  :: EN='denied'
+- [24/26 locales identical] admin.permissions.noop_title  :: EN='No change'
+- [24/26 locales identical] admin.permissions.tooltip_allowed  :: EN='{{role}} can do {{key}} (min role: {{min}})'
+- [24/26 locales identical] admin.permissions.preset_label  :: EN='Reset to preset'
+- [24/26 locales identical] inspections.stat_total  :: EN='Total'
+- [24/26 locales identical] admin.permissions.empty_description  :: EN='No modules have registered permissions yet. They appear here as soon as a module'
 
 ## Identical-values samples (top 10 per locale)
 
-### ar — 293 identical-to-EN values
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - boq.export_format_csv  :: 'CSV (.csv)'
-  - boq.export_format_excel  :: 'Excel (.xlsx)'
-  - boq.export_format_gaeb  :: 'GAEB XML (.x83)'
-  - boq.resource_total_in_base  :: '{{foreign}} ≈ {{base}} (1 {{code}} = {{rate}} {{baseCode}})'
-  - boq.resource_variant_pill  :: '▾ {{count}}'
-  - boq.shortcut_ctrl_slash  :: 'Ctrl+/'
-  - boq.shortcut_del  :: 'Del'
-  - cde.action_promote  :: 'Promote'
+### ar — 334 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### bg — 1512 identical-to-EN values
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
-  - boq.add_failed  :: 'Failed to add position\u200c\u2060\u200d'
-  - boq.add_from_catalog_short  :: 'From Catalog'
+### bg — 2000 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### cs — 1554 identical-to-EN values
-  - ai.standard_label  :: 'Standard'
-  - analytics.col_region  :: 'Region'
-  - bim.getting_started  :: 'BIM Viewer'
-  - bim.landing_hero_title  :: 'BIM 3D Viewer'
-  - bim.title  :: 'BIM Viewer'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - bim.upload_size_hint  :: 'Revit (.rvt), IFC (.ifc)'
+### cs — 2045 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### da — 1632 identical-to-EN values
-  - ai.col_pos  :: 'Pos'
-  - ai.col_total  :: 'Total'
-  - ai.currency_auto  :: 'Auto'
-  - ai.standard_label  :: 'Standard'
-  - analytics.col_budget  :: 'Budget'
-  - analytics.col_region  :: 'Region'
-  - analytics.col_status  :: 'Status'
-  - analytics.over_budget_label  :: 'over budget'
-  - bim.prop_type  :: 'Type'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
+### da — 2125 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### de — 1308 identical-to-EN values
+### de — 1337 identical-to-EN values
   - about.cap.import  :: 'Import & Export'
+  - admin.permissions.role_manager  :: 'Manager'
+  - admin.permissions.toggle_success_message  :: '{{key}} → {{role}}'
+  - agents.tokens  :: 'Tokens'
   - ai.col_pos  :: 'Pos'
   - ai.standard_label  :: 'Standard'
   - analytics.col_budget  :: 'Budget'
   - analytics.col_region  :: 'Region'
   - analytics.col_status  :: 'Status'
-  - bim.landing_hero_title  :: 'BIM 3D Viewer'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
+  - assemblies.library.tags  :: 'Tags'
 
-### es — 1271 identical-to-EN values
-  - ai.building_industrial  :: 'Industrial'
-  - ai.col_total  :: 'Total'
-  - ai.currency_auto  :: 'Auto'
-  - analytics.col_variance_pct  :: 'Var. %'
-  - bim.getting_started  :: 'BIM Viewer'
-  - bim.landing_hero_title  :: 'BIM 3D Viewer'
-  - bim.title  :: 'BIM Viewer'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
+### es — 1326 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### fi — 1518 identical-to-EN values
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
-  - boq.add_failed  :: 'Failed to add position\u200c\u2060\u200d'
-  - boq.add_from_catalog_short  :: 'From Catalog'
+### fi — 2005 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### fr — 1533 identical-to-EN values
-  - ai.building_infrastructure  :: 'Infrastructure'
-  - ai.col_description  :: 'Description'
-  - ai.col_total  :: 'Total'
-  - ai.currency_auto  :: 'Auto'
-  - analytics.col_budget  :: 'Budget'
-  - bim.classification  :: 'Classification'
-  - bim.disc_architecture  :: 'Architecture'
-  - bim.discipline_label  :: 'Discipline'
-  - bim.disciplines  :: 'Disciplines'
-  - bim.prop_discipline  :: 'Discipline'
+### fr — 1603 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### hi — 1453 identical-to-EN values
-  - bim.getting_started  :: 'BIM Viewer'
-  - bim.landing_hero_title  :: 'BIM 3D Viewer'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
+### hi — 1496 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### hr — 2261 identical-to-EN values
-  - ai.advisor_sources  :: 'Sources:'
-  - ai.area  :: 'Area (m²)'
-  - ai.building_education  :: 'Education'
-  - ai.building_healthcare  :: 'Healthcare'
-  - ai.building_hospitality  :: 'Hospitality'
-  - ai.building_industrial  :: 'Industrial'
-  - ai.building_infrastructure  :: 'Infrastructure'
-  - ai.building_residential  :: 'Residential'
-  - ai.building_retail  :: 'Retail'
-  - ai.col_description  :: 'Description'
+### hr — 2743 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### id — 2281 identical-to-EN values
-  - ai.advisor_sources  :: 'Sources:'
-  - ai.area  :: 'Area (m²)'
-  - ai.building_education  :: 'Education'
-  - ai.building_healthcare  :: 'Healthcare'
-  - ai.building_hospitality  :: 'Hospitality'
-  - ai.building_industrial  :: 'Industrial'
-  - ai.building_infrastructure  :: 'Infrastructure'
-  - ai.building_residential  :: 'Residential'
-  - ai.building_retail  :: 'Retail'
-  - ai.col_description  :: 'Description'
+### id — 2332 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### it — 1488 identical-to-EN values
-  - ai.col_pos  :: 'Pos'
-  - ai.standard_label  :: 'Standard'
-  - analytics.col_budget  :: 'Budget'
-  - auth.email  :: 'Email'
-  - auth.password  :: 'Password'
-  - bim.landing_hero_title  :: 'BIM 3D Viewer'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
+### it — 1550 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### ja — 1439 identical-to-EN values
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
-  - boq.add_failed  :: 'Failed to add position\u200c\u2060\u200d'
-  - boq.add_from_catalog_short  :: 'From Catalog'
-  - boq.add_partial_failed_items  :: 'Failed: {{items}}{{more}}'
+### ja — 1481 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### ko — 1440 identical-to-EN values
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
-  - boq.add_failed  :: 'Failed to add position\u200c\u2060\u200d'
-  - boq.add_from_catalog_short  :: 'From Catalog'
+### ko — 1481 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### mn — 6 identical-to-EN values
-  - boq.export_format_csv  :: 'CSV (.csv)'
-  - boq.export_format_excel  :: 'Excel (.xlsx)'
-  - boq.export_format_gaeb  :: 'GAEB XML (.x83)'
-  - boq.shortcut_ctrl_slash  :: 'Ctrl+/'
-  - boq.shortcut_del  :: 'Del'
-  - requirements.regex_placeholder  :: '^F[0-9]+$'
+### mn — 70 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### nl — 1626 identical-to-EN values
+### nl — 1721 identical-to-EN values
   - about.cap.import  :: 'Import & Export'
-  - ai.col_pos  :: 'Pos'
-  - ai.items  :: 'items'
-  - analytics.col_budget  :: 'Budget'
-  - analytics.col_project  :: 'Project'
-  - analytics.col_status  :: 'Status'
-  - analytics.col_variance_pct  :: 'Var. %'
-  - bim.discipline_label  :: 'Discipline'
-  - bim.disciplines  :: 'Disciplines'
-  - bim.getting_started  :: 'BIM Viewer'
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
 
-### no — 1593 identical-to-EN values
-  - ai.col_pos  :: 'Pos'
-  - ai.col_total  :: 'Total'
-  - ai.currency_auto  :: 'Auto'
-  - ai.standard_label  :: 'Standard'
-  - analytics.col_region  :: 'Region'
-  - analytics.col_status  :: 'Status'
-  - bim.prop_type  :: 'Type'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
+### no — 2085 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### pl — 1482 identical-to-EN values
-  - ai.currency_auto  :: 'Auto'
-  - ai.standard_label  :: 'Standard'
-  - analytics.col_region  :: 'Region'
-  - analytics.col_status  :: 'Status'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
+### pl — 1540 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### pt — 1424 identical-to-EN values
-  - ai.building_industrial  :: 'Industrial'
-  - ai.col_total  :: 'Total'
-  - analytics.col_status  :: 'Status'
-  - analytics.col_variance_pct  :: 'Var. %'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - bim.upload_size_hint  :: 'Revit (.rvt), IFC (.ifc)'
-  - bim.wireframe  :: 'Wireframe'
+### pt — 1486 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### ro — 2274 identical-to-EN values
-  - ai.advisor_sources  :: 'Sources:'
-  - ai.area  :: 'Area (m²)'
-  - ai.building_education  :: 'Education'
-  - ai.building_healthcare  :: 'Healthcare'
-  - ai.building_hospitality  :: 'Hospitality'
-  - ai.building_industrial  :: 'Industrial'
-  - ai.building_infrastructure  :: 'Infrastructure'
-  - ai.building_residential  :: 'Residential'
-  - ai.building_retail  :: 'Retail'
-  - ai.col_description  :: 'Description'
+### ro — 2755 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
 
-### ru — 1360 identical-to-EN values
+### ru — 1016 identical-to-EN values
+  - admin.permissions.toggle_success_message  :: '{{key}} → {{role}}'
+  - audit.filter_action_placeholder  :: 'create, update, delete…'
   - auth.email  :: 'Email'
   - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
   - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
   - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
-  - boq.add_failed  :: 'Failed to add position\u200c\u2060\u200d'
-  - boq.add_from_catalog_short  :: 'From Catalog'
-
-### sv — 1546 identical-to-EN values
-  - ai.area  :: 'Area (m²)'
-  - ai.col_pos  :: 'Pos'
-  - ai.currency_auto  :: 'Auto'
-  - ai.standard_label  :: 'Standard'
-  - analytics.col_budget  :: 'Budget'
-  - analytics.col_region  :: 'Region'
-  - analytics.col_status  :: 'Status'
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-
-### th — 2293 identical-to-EN values
-  - ai.advisor_sources  :: 'Sources:'
-  - ai.area  :: 'Area (m²)'
-  - ai.building_education  :: 'Education'
-  - ai.building_healthcare  :: 'Healthcare'
-  - ai.building_hospitality  :: 'Hospitality'
-  - ai.building_industrial  :: 'Industrial'
-  - ai.building_infrastructure  :: 'Infrastructure'
-  - ai.building_residential  :: 'Residential'
-  - ai.building_retail  :: 'Retail'
-  - ai.col_description  :: 'Description'
-
-### tr — 1470 identical-to-EN values
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - bim.upload_panel_subtitle  :: 'IFC, RVT, CSV, Excel'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
-  - boq.add_failed  :: 'Failed to add position\u200c\u2060\u200d'
-  - boq.add_from_catalog_short  :: 'From Catalog'
-
-### vi — 2255 identical-to-EN values
-  - ai.advisor_sources  :: 'Sources:'
-  - ai.area  :: 'Area (m²)'
-  - ai.building_education  :: 'Education'
-  - ai.building_healthcare  :: 'Healthcare'
-  - ai.building_hospitality  :: 'Hospitality'
-  - ai.building_industrial  :: 'Industrial'
-  - ai.building_infrastructure  :: 'Infrastructure'
-  - ai.building_residential  :: 'Residential'
-  - ai.building_retail  :: 'Retail'
-  - ai.col_description  :: 'Description'
-
-### zh — 1399 identical-to-EN values
-  - bim.upload_advanced_element_data_hint  :: 'CSV / Excel'
-  - bim.upload_advanced_geometry_hint  :: 'DAE / COLLADA'
-  - bim.upload_generate_pdf_help  :: 'Exports the sheets the designer prepared inside the model as'
-  - boq.accept_all_anomaly_suggestions  :: 'Accept All Suggested Rates ({{count}})'
-  - boq.add_all_failed  :: 'Could not add any of the {{count}} positions'
-  - boq.add_as_resources  :: 'Add {{count}} as resources'
-  - boq.add_custom_column  :: 'Or add a custom one'
-  - boq.add_failed  :: 'Failed to add position\u200c\u2060\u200d'
-  - boq.add_from_catalog_short  :: 'From Catalog'
   - boq.add_partial_failed_items  :: 'Failed: {{items}}{{more}}'
+  - boq.add_partial_success  :: 'Added {{ok}} of {{total}} positions'
+  - boq.bim_agg_distinct_label  :: '{{n}} values'
+  - boq.bim_agg_distinct_title  :: 'Per-element value — summing is meaningless, so each unique v'
+
+### sv — 2037 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
+
+### th — 2330 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
+
+### tr — 1515 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
+
+### vi — 2292 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'
+
+### zh — 1441 identical-to-EN values
+  - admin.audit_log_subtitle  :: 'Read-only timeline of every recorded change. Filter by user,'
+  - admin.audit_log_title  :: 'Audit Log'
+  - admin.permissions.col_permission  :: 'Permission'
+  - admin.permissions.confirm_preset_confirm  :: 'Apply preset'
+  - admin.permissions.confirm_preset_message  :: 'Reset every permission to the "{{preset}}" baseline? This re'
+  - admin.permissions.confirm_preset_title  :: 'Apply preset?'
+  - admin.permissions.confirm_toggle_confirm  :: 'Change'
+  - admin.permissions.confirm_toggle_message  :: 'Set "{{key}}" minimum role from {{from}} to {{to}}? This is '
+  - admin.permissions.confirm_toggle_title  :: 'Change permission?'
+  - admin.permissions.edit_off  :: 'Done editing'

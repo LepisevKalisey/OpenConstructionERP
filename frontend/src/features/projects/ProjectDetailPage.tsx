@@ -2350,7 +2350,7 @@ export function ProjectDetailPage() {
                       {/* Actions */}
                       <div className="flex items-center gap-2">
                         <Badge variant={statusVariant[boq.status] ?? 'neutral'} size="sm">
-                          {boq.status}
+                          {t(`projects.status_${boq.status}`, { defaultValue: boq.status })}
                         </Badge>
                         <Button
                           variant="ghost"
@@ -2406,7 +2406,7 @@ export function ProjectDetailPage() {
                       <p className="text-xs text-content-tertiary">{formatDate(sched.created_at, i18n.language)}</p>
                     </div>
                     <Badge variant={statusVariant[sched.status] ?? 'neutral'} size="sm">
-                      {sched.status}
+                      {t(`projects.status_${sched.status}`, { defaultValue: sched.status })}
                     </Badge>
                   </div>
                 ))}
@@ -2555,7 +2555,7 @@ export function ProjectDetailPage() {
                       <p className="text-xs text-content-tertiary">{formatDate(pkg.created_at, i18n.language)}</p>
                     </div>
                     <Badge variant={statusVariant[pkg.status] ?? 'neutral'} size="sm">
-                      {pkg.status}
+                      {t(`projects.status_${pkg.status}`, { defaultValue: pkg.status })}
                     </Badge>
                   </div>
                 ))}

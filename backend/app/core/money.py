@@ -128,6 +128,7 @@ CURRENCIES: dict[str, dict[str, Any]] = {
     "THB": {"symbol": "฿", "name": "Thai Baht", "decimals": 2},
     "IDR": {"symbol": "Rp", "name": "Indonesian Rupiah", "decimals": 0},
     "PHP": {"symbol": "₱", "name": "Philippine Peso", "decimals": 2},
+    "KZT": {"symbol": "₸", "name": "Kazakhstani Tenge", "decimals": 2},
 }
 
 _CURRENCY_CODE_RE = re.compile(r"^[A-Z]{3}$")
