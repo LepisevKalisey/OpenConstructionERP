@@ -27,3 +27,9 @@ This index tracks all project documents, their purpose, status, and relationship
 | [docs/BIM-STORAGE-ARCHITECTURE.md](file:///c:/Projects/Mides/Openconstraction/docs/BIM-STORAGE-ARCHITECTURE.md) | BIM Storage Architecture | Conceptual overview of BIM storage modules and design. | Active | None |
 | [docs/MASTER_PLAN_v2.7.md](file:///c:/Projects/Mides/Openconstraction/docs/MASTER_PLAN_v2.7.md) | Master Plan | Strategic goals and roadmap for the project. | Active | None |
 | [docs/ROADMAP_v1.9.md](file:///c:/Projects/Mides/Openconstraction/docs/ROADMAP_v1.9.md) | Roadmap | Phased roadmap for the development stages. | Active | None |
+
+## Reference & Tutorials
+
+| Document Path | Title | Purpose | Status | Linked Documents |
+|---|---|---|---|---|
+| [docs/08_reference/01_project-lifecycle-tutorial.md](file:///c:/Projects/Mides/Openconstraction/docs/08_reference/01_project-lifecycle-tutorial.md) | Пошаговое руководство: Полный жизненный цикл проекта в OpenConstructionERP | Пошаговое описание сквозного процесса управления строительным проектом от инициализации до закрытия. | Active | None |
